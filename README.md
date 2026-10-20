@@ -4,6 +4,8 @@ An open-source admin dashboard for a fictional payments platform: the operations
 
 It's built to production standards with realistic generated data, so anyone can run it, read the code and try every feature. PayDesk isn't affiliated with any real company.
 
+**Live demo:** https://paydesk-admin-omega.vercel.app
+
 > 🚧 **In active development.** See the [roadmap](#roadmap) for progress.
 
 ## Tech stack
