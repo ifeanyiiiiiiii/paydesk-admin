@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/lib/auth/dal";
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
     <SidebarProvider>
-      <Suspense fallback={<AppSidebar role={null} />}>
+      <Suspense fallback={<AppSidebar user={null} />}>
         <SidebarForCurrentUser />
       </Suspense>
       <SidebarInset>
@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 
 async function SidebarForCurrentUser() {
   const user = await getCurrentUser();
-  return <AppSidebar role={user.role} />;
+  return <AppSidebar user={user} />;
 }
 
 async function UserMenuForCurrentUser() {
