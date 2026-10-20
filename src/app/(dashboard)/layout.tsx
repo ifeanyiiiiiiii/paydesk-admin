@@ -14,7 +14,8 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={<AppSidebar user={null} />}>
         <SidebarForCurrentUser />
       </Suspense>
-      <SidebarInset>
+      {/* min-w-0 lets wide content (tables) scroll inside instead of stretching the page */}
+      <SidebarInset className="min-w-0">
         <SiteHeader
           account={
             <Suspense fallback={<Skeleton className="size-8 rounded-full" />}>
