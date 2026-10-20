@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -18,10 +19,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { findNavItem, navigationFor } from "@/config/navigation";
-import type { Role } from "@/lib/auth/permissions";
+import { SidebarAccount } from "@/components/sidebar-account";
+import type { User } from "@/lib/auth/demo-users";
 
-/** `role` is null while the session is loading; the menu shows placeholders. */
-export function AppSidebar({ role }: { role: Role | null }) {
+/** `user` is null while the session is loading; the menu shows placeholders. */
+export function AppSidebar({ user }: { user: User | null }) {
   const pathname = usePathname();
   const active = findNavItem(pathname);
   const { isMobile, setOpenMobile } = useSidebar();
@@ -54,7 +56,7 @@ export function AppSidebar({ role }: { role: Role | null }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {role === null ? (
+        {user === null ? (
           <SidebarGroup>
             <SidebarMenu>
               {["60%", "80%", "70%", "55%", "75%"].map((width, i) => (
@@ -65,7 +67,7 @@ export function AppSidebar({ role }: { role: Role | null }) {
             </SidebarMenu>
           </SidebarGroup>
         ) : (
-          navigationFor(role).map((group) => (
+          navigationFor(user.role).map((group) => (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -88,6 +90,11 @@ export function AppSidebar({ role }: { role: Role | null }) {
           ))
         )}
       </SidebarContent>
+      {user && (
+        <SidebarFooter className="border-t">
+          <SidebarAccount user={user} />
+        </SidebarFooter>
+      )}
       <SidebarRail />
     </Sidebar>
   );
