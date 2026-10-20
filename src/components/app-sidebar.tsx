@@ -13,12 +13,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { findNavItem, navigation } from "@/config/navigation";
+import { findNavItem, navigationFor } from "@/config/navigation";
+import type { Role } from "@/lib/auth/permissions";
 
-export function AppSidebar() {
+/** `role` is null while the session is loading; the menu shows placeholders. */
+export function AppSidebar({ role }: { role: Role | null }) {
   const pathname = usePathname();
   const active = findNavItem(pathname);
   const { isMobile, setOpenMobile } = useSidebar();
@@ -51,27 +54,39 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {navigation.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} onClick={closeOnMobile} />}
-                      isActive={item.href === active?.href}
-                      tooltip={item.title}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
+        {role === null ? (
+          <SidebarGroup>
+            <SidebarMenu>
+              {["60%", "80%", "70%", "55%", "75%"].map((width, i) => (
+                <SidebarMenuItem key={i}>
+                  <SidebarMenuSkeleton showIcon width={width} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
           </SidebarGroup>
-        ))}
+        ) : (
+          navigationFor(role).map((group) => (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        render={<Link href={item.href} onClick={closeOnMobile} />}
+                        isActive={item.href === active?.href}
+                        tooltip={item.title}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))
+        )}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

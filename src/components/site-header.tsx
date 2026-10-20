@@ -6,7 +6,8 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { findNavItem } from "@/config/navigation";
 
-export function SiteHeader() {
+/** `account` is the user menu, passed in so it can stream in from the server. */
+export function SiteHeader({ account }: { account: React.ReactNode }) {
   const title = findNavItem(usePathname())?.title ?? "PayDesk";
 
   return (
@@ -19,6 +20,7 @@ export function SiteHeader() {
       <h1 className="text-sm font-medium">{title}</h1>
       <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
+        {account}
       </div>
     </header>
   );
