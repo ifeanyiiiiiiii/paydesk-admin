@@ -15,10 +15,10 @@ const statusStyle: Record<
   TransactionStatus,
   { colour: string; icon: LucideIcon }
 > = {
-  successful: { colour: "var(--status-good)", icon: CheckCircle2 },
-  pending: { colour: "var(--status-warning)", icon: Clock },
-  reversed: { colour: "var(--status-serious)", icon: Undo2 },
-  failed: { colour: "var(--status-critical)", icon: XCircle },
+  successful: { colour: "var(--status-good, #0ca30c)", icon: CheckCircle2 },
+  pending: { colour: "var(--status-warning, #fab219)", icon: Clock },
+  reversed: { colour: "var(--status-serious, #ec835a)", icon: Undo2 },
+  failed: { colour: "var(--status-critical, #d03b3b)", icon: XCircle },
 };
 
 /** Share of transactions by status; each row opens those transactions. */

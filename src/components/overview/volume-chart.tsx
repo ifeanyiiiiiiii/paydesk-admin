@@ -22,9 +22,13 @@ const series = [
   {
     key: "collections",
     label: "Collections",
-    colour: "var(--series-collections)",
+    colour: "var(--series-collections, #2a78d6)",
   },
-  { key: "payouts", label: "Payouts", colour: "var(--series-payouts)" },
+  {
+    key: "payouts",
+    label: "Payouts",
+    colour: "var(--series-payouts, #eb6834)",
+  },
 ] as const;
 
 /**
