@@ -8,8 +8,12 @@ import type { Business, Transaction, TransactionChannel } from "./types";
  */
 
 const SEED = 20_261_020;
-/** The newest transaction is on this day; data covers the 180 days before it. */
-export const DATA_END = Date.UTC(2026, 9, 20, 23, 59, 59); // 20 Oct 2026
+/**
+ * The data ends at the last second of 20 Oct 2026 in Lagos (22:59:59 UTC) and
+ * covers the 180 days before it. Ending on a Lagos midnight means the last
+ * day shown on the dashboard is a full day, not one stray hour.
+ */
+export const DATA_END = Date.UTC(2026, 9, 20, 22, 59, 59);
 const DAYS = 180;
 export const TRANSACTION_COUNT = 5_000;
 
@@ -75,7 +79,9 @@ export function generateTransactions(
     // Most payments are small; a few are large. Amounts are whole naira.
     const naira =
       type === "payout"
-        ? random.int(20_000, 2_500_000)
+        ? // Businesses withdraw what they collect, so payouts are fewer and
+          // larger than collections but smaller in total
+          random.int(20_000, 600_000)
         : random.next() < 0.85
           ? random.int(500, 75_000)
           : random.int(75_000, 1_500_000);
