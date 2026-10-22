@@ -50,13 +50,19 @@ PayDesk ships with 5,000 fictional transactions across 24 businesses, generated 
 
 Search, filters and pagination on the transactions page are stored in the URL (for example `/transactions?q=kola&status=failed&page=2`), so any view can be bookmarked, shared or reloaded, and Back and Forward work. The server validates every param with Zod and falls back to defaults instead of erroring, so a hand-edited link still opens a working page. Search is debounced, so the server is queried when typing pauses, not on every keystroke.
 
+The details drawer works the same way: clicking a row adds `?txn=txn_00931` to the URL, so a link to one specific transaction can be shared, and Back closes it. Dates are shown and filtered in Lagos time, so a payment displayed as 21 Oct never matches a filter that ends on 20 Oct.
+
+### Safe CSV export
+
+Operations and super admins can export every transaction matching the current filters (all pages, not just the visible one). The export endpoint checks permission itself, so a viewer who opens the URL directly gets a 403, not data. Values that look like spreadsheet formulas (`=`, `+`, `-`, `@`) are escaped to prevent CSV injection, amounts are written as exact decimals built from integer kobo, and responses are marked `no-store` because they contain customer data. See [`src/lib/csv.ts`](src/lib/csv.ts).
+
 ## Roadmap
 
 - [x] Project setup, CI, money utilities with tests
 - [x] App shell: sidebar navigation, header, light/dark theme
 - [x] Demo login with roles and permission checks
 - [x] Transactions: server-side pagination, URL-synced filters, debounced search
-- [ ] Transactions: detail drawer, CSV export
+- [x] Transactions: details drawer with fee breakdown and timeline, CSV export
 - [ ] Overview analytics with charts that drill down into filtered transactions
 - [ ] Businesses and wallets: freeze/unfreeze, withdrawals with fee quotes
 - [ ] Fee management, admin users and role-based permissions, audit log
