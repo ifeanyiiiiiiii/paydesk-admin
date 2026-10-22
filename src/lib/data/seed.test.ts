@@ -42,6 +42,21 @@ describe("generateTransactions", () => {
     expect(Math.min(...times)).toBeGreaterThan(DATA_END - 180 * 86_400_000);
   });
 
+  it("ends on 20 Oct in Lagos time, so the last dashboard day is a full day", () => {
+    const lagosDays = transactions.map((t) =>
+      new Date(Date.parse(t.createdAt) + 3_600_000).toISOString().slice(0, 10),
+    );
+    expect(lagosDays.reduce((a, b) => (a > b ? a : b))).toBe("2026-10-20");
+  });
+
+  it("collects more than it pays out, like a real platform", () => {
+    const total = (type: string) =>
+      transactions
+        .filter((t) => t.type === type && t.status === "successful")
+        .reduce((sum, t) => sum + t.amount, 0);
+    expect(total("collection")).toBeGreaterThan(total("payout"));
+  });
+
   it("links every transaction to a real business", () => {
     const names = new Map(businesses.map((b) => [b.id, b.name]));
     for (const txn of transactions) {
