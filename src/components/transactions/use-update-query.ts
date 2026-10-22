@@ -22,6 +22,8 @@ export function useUpdateQuery() {
     }
     // Changing a filter makes the current page number meaningless
     if (resetPage) params.delete("page");
+    // and closes any open transaction drawer
+    params.delete("txn");
     const query = params.toString();
     startTransition(() => {
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });

@@ -1,4 +1,5 @@
 import { SearchX } from "lucide-react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -11,8 +12,16 @@ import { channelLabels, type Transaction, typeLabels } from "@/lib/data/types";
 import { formatDateTime } from "@/lib/format";
 import { formatNaira } from "@/lib/money";
 import { StatusBadge } from "./status-badge";
+import { TransactionRow } from "./transaction-row";
 
-export function TransactionsTable({ rows }: { rows: Transaction[] }) {
+/** `detailsHref` builds the link that opens a transaction, keeping the current filters. */
+export function TransactionsTable({
+  rows,
+  detailsHref,
+}: {
+  rows: Transaction[];
+  detailsHref: (id: string) => string;
+}) {
   return (
     <div className="overflow-x-auto rounded-xl border">
       <Table>
@@ -42,12 +51,18 @@ export function TransactionsTable({ rows }: { rows: Transaction[] }) {
             </TableRow>
           ) : (
             rows.map((txn) => (
-              <TableRow key={txn.id}>
+              <TransactionRow key={txn.id} href={detailsHref(txn.id)}>
                 <TableCell className="whitespace-nowrap text-muted-foreground">
                   {formatDateTime(txn.createdAt)}
                 </TableCell>
                 <TableCell className="font-mono text-xs">
-                  {txn.reference}
+                  <Link
+                    href={detailsHref(txn.id)}
+                    scroll={false}
+                    className="underline-offset-4 hover:underline focus-visible:underline"
+                  >
+                    {txn.reference}
+                  </Link>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {txn.businessName}
@@ -67,7 +82,7 @@ export function TransactionsTable({ rows }: { rows: Transaction[] }) {
                 <TableCell>
                   <StatusBadge status={txn.status} />
                 </TableCell>
-              </TableRow>
+              </TransactionRow>
             ))
           )}
         </TableBody>

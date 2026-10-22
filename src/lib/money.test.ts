@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { calculateFee, formatNaira, kobo, parseNaira, sumKobo } from "./money";
+import {
+  calculateFee,
+  formatNaira,
+  kobo,
+  parseNaira,
+  sumKobo,
+  toNairaDecimal,
+} from "./money";
 
 describe("kobo", () => {
   it("accepts integers", () => {
@@ -52,6 +59,22 @@ describe("formatNaira", () => {
 
   it("supports compact notation for dashboards", () => {
     expect(formatNaira(kobo(125_000_000), { compact: true })).toBe("₦1.3M");
+  });
+});
+
+describe("toNairaDecimal", () => {
+  it.each([
+    [123_456, "1234.56"],
+    [100, "1.00"],
+    [7, "0.07"],
+    [0, "0.00"],
+    [-5_005, "-50.05"],
+  ])("formats %i kobo as %s", (amount, expected) => {
+    expect(toNairaDecimal(kobo(amount))).toBe(expected);
+  });
+
+  it("stays exact for amounts too large for float math to show cleanly", () => {
+    expect(toNairaDecimal(kobo(900_719_925_474_099))).toBe("9007199254740.99");
   });
 });
 

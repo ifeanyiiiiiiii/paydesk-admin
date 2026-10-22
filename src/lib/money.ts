@@ -59,6 +59,18 @@ export function formatNaira(
   return (compact ? compactFormat : standardFormat).format(naira);
 }
 
+/**
+ * Plain decimal naira for machine-readable output like CSV: 123456 → "1234.56".
+ * Built from the integer parts, so there's no floating-point rounding.
+ */
+export function toNairaDecimal(amount: Kobo): string {
+  const sign = amount < 0 ? "-" : "";
+  const abs = Math.abs(amount);
+  const naira = Math.trunc(abs / KOBO_PER_NAIRA);
+  const rest = String(abs % KOBO_PER_NAIRA).padStart(2, "0");
+  return `${sign}${naira}.${rest}`;
+}
+
 /** Sums kobo amounts. Integer addition, so the result is exact. */
 export function sumKobo(amounts: readonly Kobo[]): Kobo {
   return kobo(amounts.reduce<number>((total, amount) => total + amount, 0));

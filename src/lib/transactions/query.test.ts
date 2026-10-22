@@ -112,10 +112,19 @@ describe("queryTransactions", () => {
     expect(query({ q: "nobody" }).total).toBe(0);
   });
 
-  it("includes the whole 'to' day and the start of the 'from' day", () => {
+  it("filters by whole days in Lagos time, matching how dates are displayed", () => {
+    // txn_00002 is 2 Oct 23:30 UTC, which is 3 Oct 00:30 in Lagos
     expect(
       query({ from: "2026-10-01", to: "2026-10-02" }).rows.map((t) => t.id),
-    ).toEqual(["txn_00002", "txn_00003"]);
+    ).toEqual(["txn_00003"]);
+    expect(
+      query({ from: "2026-10-03", to: "2026-10-03" }).rows.map((t) => t.id),
+    ).toEqual(["txn_00001", "txn_00002"]);
+  });
+
+  it("includes the start of the 'from' day in Lagos", () => {
+    // 1 Oct 00:00 UTC is 1 Oct 01:00 in Lagos
+    expect(query({ from: "2026-10-01", to: "2026-10-01" }).total).toBe(1);
   });
 
   it("paginates", () => {
