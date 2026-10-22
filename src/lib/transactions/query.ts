@@ -66,19 +66,25 @@ export interface TransactionPage {
   pageCount: number;
 }
 
-/** Filters, searches and paginates. Pure, so it's easy to test. */
-export function queryTransactions(
+/** Lagos has no daylight saving, so it's always UTC+1. */
+const LAGOS_OFFSET = "+01:00";
+
+/** Applies search and filters, without paginating. Used by the table and CSV export. */
+export function filterTransactions(
   transactions: readonly Transaction[],
   query: TransactionQuery,
-): TransactionPage {
+): Transaction[] {
   const search = query.q.toLowerCase();
-  // Dates are whole days in UTC; "to" includes the entire day
+  // Date filters are whole days in Lagos time, matching how dates are shown.
+  // Using UTC here would let a payment shown as 21 Oct 00:30 match "to 20 Oct".
   const fromTime = query.from
-    ? Date.parse(`${query.from}T00:00:00Z`)
+    ? Date.parse(`${query.from}T00:00:00${LAGOS_OFFSET}`)
     : -Infinity;
-  const toTime = query.to ? Date.parse(`${query.to}T23:59:59.999Z`) : Infinity;
+  const toTime = query.to
+    ? Date.parse(`${query.to}T23:59:59.999${LAGOS_OFFSET}`)
+    : Infinity;
 
-  const matches = transactions.filter((txn) => {
+  return transactions.filter((txn) => {
     if (query.status && txn.status !== query.status) return false;
     if (query.type && txn.type !== query.type) return false;
     const time = Date.parse(txn.createdAt);
@@ -94,7 +100,14 @@ export function queryTransactions(
     }
     return true;
   });
+}
 
+/** Filters, searches and paginates. Pure, so it's easy to test. */
+export function queryTransactions(
+  transactions: readonly Transaction[],
+  query: TransactionQuery,
+): TransactionPage {
+  const matches = filterTransactions(transactions, query);
   const pageCount = Math.max(1, Math.ceil(matches.length / query.pageSize));
   // A page past the end (e.g. after narrowing a filter) shows the last page
   const page = Math.min(query.page, pageCount);
