@@ -51,7 +51,7 @@ export function TopBusinesses({
               aria-hidden
             >
               <span
-                className="block h-full rounded-full bg-series-collections"
+                className="block h-full rounded-full bg-(--series-collections,#2a78d6)"
                 style={{ width: `${(business.volume / max) * 100}%` }}
               />
             </span>
