@@ -14,10 +14,11 @@ It's built to production standards with realistic generated data, so anyone can 
 - **Styling:** Tailwind CSS, shadcn/ui
 - **Auth:** encrypted cookie sessions (iron-session), role-based permissions
 - **Data:** Zod for validating URL params; a seeded generator for realistic demo data
+- **Charts:** Recharts
 - **Testing:** Vitest
 - **CI:** GitHub Actions (lint, type check, tests, build on every push)
 
-More will be added as features land: TanStack Query and Table, Zustand, React Hook Form and Zod, Recharts, Playwright.
+More will be added as features land: TanStack Query, Zustand, React Hook Form, Playwright.
 
 ## Design decisions
 
@@ -56,6 +57,12 @@ The details drawer works the same way: clicking a row adds `?txn=txn_00931` to t
 
 Operations and super admins can export every transaction matching the current filters (all pages, not just the visible one). The export endpoint checks permission itself, so a viewer who opens the URL directly gets a 403, not data. Values that look like spreadsheet formulas (`=`, `+`, `-`, `@`) are escaped to prevent CSV injection, amounts are written as exact decimals built from integer kobo, and responses are marked `no-store` because they contain customer data. See [`src/lib/csv.ts`](src/lib/csv.ts).
 
+### An overview you can click through
+
+The overview shows headline numbers (volume, transaction count, success rate, fees) against the previous period, daily collections and payouts, the status mix and the top businesses for the last 7, 30 or 90 days. Every part is a way into the data: click a day on the chart, a status or a business, and you land on the transactions page filtered to exactly that slice.
+
+The charts follow a few rules: one shared axis (never two y-scales), colours checked for colourblind separation and contrast in both light and dark mode, status colours always paired with an icon and label, straight lines for daily totals, and a "Show as table" view with the same data for screen readers and exact values. The numbers come from a pure, tested `computeOverview` function. See [`src/lib/analytics/overview.ts`](src/lib/analytics/overview.ts).
+
 ## Roadmap
 
 - [x] Project setup, CI, money utilities with tests
@@ -63,7 +70,7 @@ Operations and super admins can export every transaction matching the current fi
 - [x] Demo login with roles and permission checks
 - [x] Transactions: server-side pagination, URL-synced filters, debounced search
 - [x] Transactions: details drawer with fee breakdown and timeline, CSV export
-- [ ] Overview analytics with charts that drill down into filtered transactions
+- [x] Overview analytics with charts that drill down into filtered transactions
 - [ ] Businesses and wallets: freeze/unfreeze, withdrawals with fee quotes
 - [ ] Fee management, admin users and role-based permissions, audit log
 - [ ] End-to-end tests, accessibility pass, screenshots
