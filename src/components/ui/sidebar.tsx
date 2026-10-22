@@ -179,8 +179,11 @@ function Sidebar({
     )
   }
 
-  if (isMobile) {
-    return (
+  // Always render the desktop markup (CSS hides it below md) and add the
+  // mobile sheet alongside it. Swapping one for the other made the server
+  // HTML (desktop) differ from the client on phones: a hydration mismatch
+  // when the sidebar streams in after the provider knows the screen size.
+  const mobileSheet = isMobile ? (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
           dir={dir}
@@ -202,10 +205,11 @@ function Sidebar({
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
-    )
-  }
+  ) : null
 
   return (
+    <>
+    {mobileSheet}
     <div
       className="group peer hidden text-sidebar-foreground md:block"
       data-state={state}
@@ -248,6 +252,7 @@ function Sidebar({
         </div>
       </div>
     </div>
+    </>
   )
 }
 
