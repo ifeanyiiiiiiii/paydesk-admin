@@ -15,10 +15,11 @@ It's built to production standards with realistic generated data, so anyone can 
 - **Auth:** encrypted cookie sessions (iron-session), role-based permissions
 - **Data:** Zod for validating URL params; a seeded generator for realistic demo data
 - **Charts:** Recharts
+- **Client data:** TanStack Query (optimistic updates with rollback), React Hook Form + Zod forms
 - **Testing:** Vitest
 - **CI:** GitHub Actions (lint, type check, tests, build on every push)
 
-More will be added as features land: TanStack Query, Zustand, React Hook Form, Playwright.
+More will be added as features land: Playwright end-to-end tests.
 
 ## Design decisions
 
@@ -63,6 +64,18 @@ The overview shows headline numbers (volume, transaction count, success rate, fe
 
 The charts follow a few rules: one shared axis (never two y-scales), colours checked for colourblind separation and contrast in both light and dark mode, status colours always paired with an icon and label, straight lines for daily totals, and a "Show as table" view with the same data for screen readers and exact values. The numbers come from a pure, tested `computeOverview` function. See [`src/lib/analytics/overview.ts`](src/lib/analytics/overview.ts).
 
+### Wallets: optimistic updates that roll back
+
+Freezing or unfreezing a wallet updates the list instantly. If the server refuses (no permission, already frozen, a network failure), TanStack Query restores exactly what was there before and an error message explains why. Freezing needs a reason, checked by the same Zod schema in the browser form and in the API, so they can't disagree. See [`src/components/wallets/use-wallets.ts`](src/components/wallets/use-wallets.ts).
+
+### Every visitor gets their own sandbox
+
+PayDesk is a public demo, so one visitor freezing a wallet shouldn't change it for everyone. Each visitor's changes are stored in their own encrypted, httpOnly cookie and layered on top of the shared demo data. Changes survive a reload, nobody can affect anyone else, and it works on serverless hosting where server memory isn't shared between requests. See [`src/lib/sandbox/sandbox.ts`](src/lib/sandbox/sandbox.ts).
+
+### APIs answer with status codes
+
+Routes under `/api` never redirect to the login page. They return JSON with 401 (not signed in), 403 (not allowed), 400 (invalid input), 404 or 409 (a change that doesn't make sense, like freezing a frozen wallet), so the client can react properly.
+
 ## Roadmap
 
 - [x] Project setup, CI, money utilities with tests
@@ -71,7 +84,8 @@ The charts follow a few rules: one shared axis (never two y-scales), colours che
 - [x] Transactions: server-side pagination, URL-synced filters, debounced search
 - [x] Transactions: details drawer with fee breakdown and timeline, CSV export
 - [x] Overview analytics with charts that drill down into filtered transactions
-- [ ] Businesses and wallets: freeze/unfreeze, withdrawals with fee quotes
+- [x] Businesses directory and wallets with optimistic freeze/unfreeze
+- [ ] Withdrawals with live fee quotes
 - [ ] Fee management, admin users and role-based permissions, audit log
 - [ ] End-to-end tests, accessibility pass, screenshots
 
