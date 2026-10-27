@@ -17,14 +17,36 @@ export const DATA_END = Date.UTC(2026, 9, 20, 22, 59, 59);
 const DAYS = 180;
 export const TRANSACTION_COUNT = 5_000;
 
-const businessNames = [
-  "Kola Kitchen", "Ayo Logistics", "Zuma Pharmacy", "Lekki Laundry Co.",
-  "Naija Threads", "Oak & Iroko Furniture", "Ikeja Gadgets Hub", "Chop Daily",
-  "Bright Minds Tutors", "Sabo Auto Parts", "Mama Put Express", "Jollof Junction",
-  "Aso Rock Travels", "Delta Fresh Farms", "Owambe Rentals", "Kano Leather Works",
-  "Yaba Print House", "Ember Bakery", "Swift Courier NG", "Palmwine Studios",
-  "Enugu Coal Café", "Harmattan Skincare", "Ibadan Book Stop", "Gidi Fitness",
-];
+/** Each business with a category and city that fit its name. All fictional. */
+const businessProfiles: Record<string, { category: string; city: string }> = {
+  "Kola Kitchen": { category: "Food & drink", city: "Lagos" },
+  "Ayo Logistics": { category: "Logistics", city: "Lagos" },
+  "Zuma Pharmacy": { category: "Health", city: "Abuja" },
+  "Lekki Laundry Co.": { category: "Services", city: "Lagos" },
+  "Naija Threads": { category: "Fashion", city: "Lagos" },
+  "Oak & Iroko Furniture": { category: "Home", city: "Ibadan" },
+  "Ikeja Gadgets Hub": { category: "Electronics", city: "Lagos" },
+  "Chop Daily": { category: "Food & drink", city: "Port Harcourt" },
+  "Bright Minds Tutors": { category: "Education", city: "Enugu" },
+  "Sabo Auto Parts": { category: "Automotive", city: "Lagos" },
+  "Mama Put Express": { category: "Food & drink", city: "Abuja" },
+  "Jollof Junction": { category: "Food & drink", city: "Lagos" },
+  "Aso Rock Travels": { category: "Travel", city: "Abuja" },
+  "Delta Fresh Farms": { category: "Agriculture", city: "Asaba" },
+  "Owambe Rentals": { category: "Events", city: "Lagos" },
+  "Kano Leather Works": { category: "Fashion", city: "Kano" },
+  "Yaba Print House": { category: "Services", city: "Lagos" },
+  "Ember Bakery": { category: "Food & drink", city: "Abuja" },
+  "Swift Courier NG": { category: "Logistics", city: "Port Harcourt" },
+  "Palmwine Studios": { category: "Media", city: "Lagos" },
+  "Enugu Coal Café": { category: "Food & drink", city: "Enugu" },
+  "Harmattan Skincare": { category: "Beauty", city: "Kano" },
+  "Ibadan Book Stop": { category: "Retail", city: "Ibadan" },
+  "Gidi Fitness": { category: "Health", city: "Lagos" },
+};
+
+// Object keys keep insertion order, so ids stay stable (biz_001 = Kola Kitchen)
+const businessNames = Object.keys(businessProfiles);
 
 const firstNames = [
   "Chinedu", "Aisha", "Tobi", "Ngozi", "Emeka", "Funke", "Ibrahim", "Kemi",
@@ -47,9 +69,18 @@ const feeRules: Record<TransactionChannel, FeeRule> = {
 const REFERENCE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O or 1/I
 
 export function generateBusinesses(): Business[] {
+  // A separate stream from the transactions' one, so adding business details
+  // never changes the generated transactions
+  const random = createRandom(SEED + 1);
   return businessNames.map((name, i) => ({
     id: `biz_${String(i + 1).padStart(3, "0")}`,
     name,
+    ...businessProfiles[name],
+    verification: random.next() < 0.85 ? "verified" : "pending",
+    // Every business joined before the data starts (180 days back), within 2 years
+    joinedAt: new Date(
+      DATA_END - (DAYS + random.int(10, 720)) * 86_400_000,
+    ).toISOString(),
   }));
 }
 

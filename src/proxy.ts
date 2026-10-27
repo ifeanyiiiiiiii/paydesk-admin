@@ -15,6 +15,11 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (pathname !== "/login" && !request.cookies.has(SESSION_COOKIE)) {
+    // APIs answer with a status code; redirecting them to an HTML login
+    // page would hand the client a web page where it expects JSON
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
     const url = new URL("/login", request.url);
     url.searchParams.set("from", pathname + search);
     return NextResponse.redirect(url);
@@ -25,5 +30,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except Next.js internals and static files
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)",
+  ],
 };

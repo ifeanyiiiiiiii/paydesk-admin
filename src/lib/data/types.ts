@@ -17,6 +17,24 @@ export type TransactionChannel = (typeof transactionChannels)[number];
 export interface Business {
   id: string;
   name: string;
+  category: string;
+  city: string;
+  /** Whether the business has passed identity checks (KYC). */
+  verification: "verified" | "pending";
+  /** ISO 8601 date the business joined PayDesk. */
+  joinedAt: string;
+}
+
+export type WalletStatus = "active" | "frozen";
+
+export interface Wallet {
+  id: string;
+  businessId: string;
+  businessName: string;
+  balance: Kobo;
+  status: WalletStatus;
+  /** Set while frozen: why, when (ISO 8601) and by whom. */
+  frozen?: { reason: string; at: string; by: string };
 }
 
 export interface Transaction {

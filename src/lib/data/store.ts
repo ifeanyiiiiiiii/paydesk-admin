@@ -1,6 +1,7 @@
 import "server-only";
+import { generateWallets } from "@/lib/wallets/wallets";
 import { generateBusinesses, generateTransactions } from "./seed";
-import type { Business, Transaction } from "./types";
+import type { Business, Transaction, Wallet } from "./types";
 
 /**
  * In-memory stand-in for a database. Generated once per server instance and
@@ -9,6 +10,7 @@ import type { Business, Transaction } from "./types";
  */
 let businesses: Business[] | undefined;
 let transactions: Transaction[] | undefined;
+let wallets: Wallet[] | undefined;
 
 export function getBusinesses(): Business[] {
   businesses ??= generateBusinesses();
@@ -18,4 +20,10 @@ export function getBusinesses(): Business[] {
 export function getAllTransactions(): Transaction[] {
   transactions ??= generateTransactions(getBusinesses());
   return transactions;
+}
+
+/** The shared starting wallets. Each visitor's own changes are layered on top (see lib/sandbox). */
+export function getSeedWallets(): Wallet[] {
+  wallets ??= generateWallets(getBusinesses(), getAllTransactions());
+  return wallets;
 }
