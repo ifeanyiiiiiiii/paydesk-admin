@@ -10,7 +10,7 @@ interface SessionData {
 
 const SESSION_TTL_SECONDS = 8 * 60 * 60; // one working day
 
-function sessionPassword(): string {
+export function sessionPassword(): string {
   const password = process.env.SESSION_PASSWORD;
   if (!password || password.length < 32) {
     throw new Error(
