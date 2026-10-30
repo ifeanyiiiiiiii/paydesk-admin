@@ -6,6 +6,7 @@ import {
   applyWalletOverrides,
   changeWalletStatus,
   generateWallets,
+  walletForRole,
   walletStatusChangeSchema,
   withWalletStatus,
 } from "./wallets";
@@ -20,6 +21,24 @@ const wallet: Wallet = {
   balance: kobo(5_000_000),
   status: "active",
 };
+
+describe("walletForRole", () => {
+  const priced = {
+    ...wallet,
+    withdrawalFee: { percentBps: 25, flat: kobo(1_000) },
+  };
+
+  it("hides the fee rule from viewers, who can't see fee rules", () => {
+    const seen = walletForRole(priced, "viewer");
+    expect(seen).not.toHaveProperty("withdrawalFee");
+    expect(seen.balance).toBe(priced.balance);
+  });
+
+  it("keeps it for roles that can withdraw", () => {
+    expect(walletForRole(priced, "operations")).toEqual(priced);
+    expect(walletForRole(priced, "super_admin")).toEqual(priced);
+  });
+});
 
 describe("generateWallets", () => {
   it("creates one wallet per business with a positive whole-kobo balance", () => {

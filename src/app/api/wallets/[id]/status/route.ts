@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { authorizeApi } from "@/lib/auth/api";
 import { SandboxFullError } from "@/lib/sandbox/fit";
 import { setWalletStatus } from "@/lib/wallets/service";
-import { walletStatusChangeSchema } from "@/lib/wallets/wallets";
+import {
+  walletForRole,
+  walletStatusChangeSchema,
+} from "@/lib/wallets/wallets";
 
 const messages = {
   not_found: { status: 404, error: "Wallet not found" },
@@ -38,7 +41,7 @@ export async function POST(
       const { status, error } = messages[result.error];
       return Response.json({ error }, { status });
     }
-    return Response.json(result.wallet);
+    return Response.json(walletForRole(result.wallet, auth.user.role));
   } catch (error) {
     if (error instanceof SandboxFullError) {
       return Response.json({ error: error.message }, { status: 409 });

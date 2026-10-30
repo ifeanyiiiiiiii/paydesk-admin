@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Transaction, Wallet } from "@/lib/data/types";
+import type { PayableWallet, Transaction, Wallet } from "@/lib/data/types";
 import {
   calculateFee,
   type FeeRule,
@@ -27,12 +27,6 @@ export function bankName(code: string): string {
   return banks.find((bank) => bank.code === code)?.name ?? "Unknown bank";
 }
 
-/** 0.5% + ₦25, at most ₦1,000. */
-export const WITHDRAWAL_FEE: FeeRule = {
-  percentBps: 50,
-  flat: kobo(2_500),
-  cap: kobo(100_000),
-};
 export const MIN_WITHDRAWAL = kobo(10_000); // ₦100
 export const MAX_WITHDRAWAL = kobo(500_000_000); // ₦5,000,000
 
@@ -43,8 +37,8 @@ export interface WithdrawalQuote {
   total: Kobo;
 }
 
-export function quoteWithdrawal(amount: Kobo): WithdrawalQuote {
-  const fee = calculateFee(amount, WITHDRAWAL_FEE);
+export function quoteWithdrawal(amount: Kobo, rule: FeeRule): WithdrawalQuote {
+  const fee = calculateFee(amount, rule);
   return { amount, fee, total: kobo(amount + fee) };
 }
 
@@ -58,17 +52,30 @@ export function tryParseNaira(input: string): Kobo | null {
 }
 
 export type WithdrawalError =
-  "wallet_frozen" | "below_minimum" | "above_maximum" | "insufficient_funds";
+  | "wallet_frozen"
+  | "below_minimum"
+  | "above_maximum"
+  | "insufficient_funds"
+  | "fee_changed";
+
+type WithdrawalWallet = Pick<
+  PayableWallet,
+  "balance" | "status" | "withdrawalFee"
+>;
+
+export function isPayable(wallet: Wallet): wallet is PayableWallet {
+  return wallet.withdrawalFee !== undefined;
+}
 
 /** The rules for a withdrawal. The form and the server both run this. */
 export function checkWithdrawal(
-  wallet: Pick<Wallet, "balance" | "status">,
+  wallet: WithdrawalWallet,
   amount: Kobo,
 ): WithdrawalError | null {
   if (wallet.status === "frozen") return "wallet_frozen";
   if (amount < MIN_WITHDRAWAL) return "below_minimum";
   if (amount > MAX_WITHDRAWAL) return "above_maximum";
-  if (quoteWithdrawal(amount).total > wallet.balance)
+  if (quoteWithdrawal(amount, wallet.withdrawalFee).total > wallet.balance)
     return "insufficient_funds";
   return null;
 }
@@ -78,6 +85,7 @@ export const withdrawalMessages: Record<WithdrawalError, string> = {
   below_minimum: `The minimum withdrawal is ${formatNaira(MIN_WITHDRAWAL)}`,
   above_maximum: `The maximum withdrawal is ${formatNaira(MAX_WITHDRAWAL)}`,
   insufficient_funds: "The balance can't cover this amount plus the fee",
+  fee_changed: "The fee has changed. Check the new total and send again.",
 };
 
 /** Nigerian bank account numbers (NUBAN) have exactly 10 digits. */
@@ -92,9 +100,7 @@ export const accountNumberSchema = z
   .regex(ACCOUNT_NUMBER, "Account numbers have exactly 10 digits");
 
 /** The form's fields, with the amount checked against this wallet. */
-export function withdrawalFormSchema(
-  wallet: Pick<Wallet, "balance" | "status">,
-) {
+export function withdrawalFormSchema(wallet: WithdrawalWallet) {
   return z.object({
     amount: z.string().superRefine((value, ctx) => {
       const amount = tryParseNaira(value);
@@ -120,6 +126,11 @@ export const withdrawalRequestSchema = z.object({
   amount: z.int().positive(),
   bankCode: z.enum(bankCodes),
   accountNumber: accountNumberSchema,
+  /**
+   * The fee the admin agreed to on the review step. It's never charged from
+   * here: if it no longer matches the server's fee, the request is refused.
+   */
+  expectedFee: z.int().nonnegative(),
   /** Generated once per attempt, so retrying can never pay twice. */
   idempotencyKey: z.uuid(),
 });

@@ -1,4 +1,4 @@
-import type { Kobo } from "@/lib/money";
+import type { FeeRule, Kobo } from "@/lib/money";
 
 export const transactionStatuses = [
   "successful",
@@ -33,9 +33,14 @@ export interface Wallet {
   businessName: string;
   balance: Kobo;
   status: WalletStatus;
+  /** The fee rule this business pays to withdraw. Hidden from admins who can't. */
+  withdrawalFee?: FeeRule;
   /** Set while frozen: why, when (ISO 8601) and by whom. */
   frozen?: { reason: string; at: string; by: string };
 }
+
+/** A wallet with its fee rule known, so a withdrawal can be priced. */
+export type PayableWallet = Wallet & { withdrawalFee: FeeRule };
 
 export interface Transaction {
   id: string;

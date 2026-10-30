@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { can, type Role } from "@/lib/auth/permissions";
 import type {
   Business,
   Transaction,
@@ -128,6 +129,17 @@ export function changeWalletStatus(
 function withoutFreeze(wallet: Wallet): Omit<Wallet, "frozen"> {
   const copy = { ...wallet };
   delete copy.frozen;
+  return copy;
+}
+
+/**
+ * The wallet as this role may see it. Fee rules include rates negotiated with
+ * businesses, so they only go to admins who need them to price a withdrawal.
+ */
+export function walletForRole(wallet: Wallet, role: Role): Wallet {
+  if (can(role, "wallets:withdraw")) return wallet;
+  const copy = { ...wallet };
+  delete copy.withdrawalFee;
   return copy;
 }
 

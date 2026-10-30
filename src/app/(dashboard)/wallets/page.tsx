@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WalletsView } from "@/components/wallets/wallets-view";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { can } from "@/lib/auth/permissions";
-import { getWallets } from "@/lib/wallets/service";
+import { getWalletsFor } from "@/lib/wallets/service";
 
 export const metadata: Metadata = { title: "Wallets" };
 
@@ -33,7 +33,8 @@ export default function WalletsPage() {
 }
 
 async function WalletsContent() {
-  const [user, wallets] = await Promise.all([getCurrentUser(), getWallets()]);
+  const user = await getCurrentUser();
+  const wallets = await getWalletsFor(user.role);
   return (
     <WalletsView
       initialWallets={wallets}

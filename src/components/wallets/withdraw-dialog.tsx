@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Wallet } from "@/lib/data/types";
+import type { PayableWallet } from "@/lib/data/types";
+import { describeFeeRule } from "@/lib/fees/fees";
 import { formatNaira, kobo } from "@/lib/money";
 import {
   bankName,
@@ -50,10 +51,10 @@ export function WithdrawDialog({
   wallet,
   onClose,
 }: {
-  wallet: Wallet;
+  wallet: PayableWallet;
   onClose: () => void;
 }) {
-  const [step, setStep] = useState<"details" | "review">("details");
+  const [requestedStep, setStep] = useState<"details" | "review">("details");
   // One key per attempt: resending after a failure reuses it, so the server
   // can recognise a retry instead of paying a second time
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -73,9 +74,12 @@ export function WithdrawDialog({
   const amount = tryParseNaira(amountText);
   const quote =
     amount !== null && checkWithdrawal(wallet, amount) === null
-      ? quoteWithdrawal(amount)
+      ? quoteWithdrawal(amount, wallet.withdrawalFee)
       : null;
   const accountName = lookup.data?.accountName;
+  // The wallet can refresh while open, and a new fee may no longer be
+  // affordable. Back to the details then, where the error can be shown
+  const step = quote ? requestedStep : "details";
 
   function confirm() {
     if (!quote) return;
@@ -84,6 +88,7 @@ export function WithdrawDialog({
         amount: quote.amount,
         bankCode,
         accountNumber,
+        expectedFee: quote.fee,
         idempotencyKey,
       },
       {
@@ -211,7 +216,7 @@ export function WithdrawDialog({
               )}
             </div>
 
-            {quote && <QuoteSummary quote={quote} balance={wallet.balance} />}
+            {quote && <QuoteSummary quote={quote} wallet={wallet} />}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
@@ -231,7 +236,7 @@ export function WithdrawDialog({
                 <dt className="text-muted-foreground">Account</dt>
                 <dd className="text-right tabular-nums">{accountNumber}</dd>
               </dl>
-              <QuoteSummary quote={quote} balance={wallet.balance} />
+              <QuoteSummary quote={quote} wallet={wallet} />
               <DialogFooter>
                 <Button
                   type="button"
@@ -302,10 +307,10 @@ function AccountStatus({
 
 function QuoteSummary({
   quote,
-  balance,
+  wallet,
 }: {
   quote: WithdrawalQuote;
-  balance: Wallet["balance"];
+  wallet: PayableWallet;
 }) {
   return (
     <dl className="space-y-1.5 rounded-lg bg-muted/60 p-3 text-sm">
@@ -314,7 +319,9 @@ function QuoteSummary({
         <dd className="tabular-nums">{formatNaira(quote.amount)}</dd>
       </div>
       <div className="flex justify-between gap-4">
-        <dt className="text-muted-foreground">Fee</dt>
+        <dt className="text-muted-foreground">
+          Fee ({describeFeeRule(wallet.withdrawalFee)})
+        </dt>
         <dd className="tabular-nums">+{formatNaira(quote.fee)}</dd>
       </div>
       <div className="flex justify-between gap-4 border-t pt-1.5 font-medium">
@@ -324,7 +331,7 @@ function QuoteSummary({
       <div className="flex justify-between gap-4 text-xs text-muted-foreground">
         <dt>Balance after</dt>
         <dd className="tabular-nums">
-          {formatNaira(kobo(balance - quote.total))}
+          {formatNaira(kobo(wallet.balance - quote.total))}
         </dd>
       </div>
     </dl>

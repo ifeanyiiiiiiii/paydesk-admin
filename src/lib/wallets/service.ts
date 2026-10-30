@@ -1,6 +1,8 @@
 import "server-only";
 import { getAllTransactions, getSeedWallets } from "@/lib/data/store";
-import type { Transaction, Wallet } from "@/lib/data/types";
+import type { PayableWallet, Transaction, Wallet } from "@/lib/data/types";
+import type { Role } from "@/lib/auth/permissions";
+import { applyFeeOverrides, resolveFeeRule } from "@/lib/fees/fees";
 import { kobo } from "@/lib/money";
 import { getSandbox, type Sandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import { lookupAccount } from "./bank-lookup";
@@ -8,6 +10,7 @@ import {
   applyWalletOverrides,
   changeWalletStatus,
   type StatusChangeResult,
+  walletForRole,
   type WalletStatusChange,
 } from "./wallets";
 import {
@@ -23,16 +26,28 @@ import {
 const WITHDRAWAL_HISTORY_LIMIT = 10;
 
 /** The seed wallets as this visitor sees them. */
-function walletsFor(sandbox: Sandbox): Wallet[] {
+function walletsFor(sandbox: Sandbox): PayableWallet[] {
+  const fees = applyFeeOverrides(sandbox.fees);
   return applyWalletDebits(
     applyWalletOverrides(getSeedWallets(), sandbox.wallets),
     sandbox.debits,
-  );
+  ).map((wallet) => ({
+    ...wallet,
+    withdrawalFee: resolveFeeRule(fees, wallet.businessId, "withdrawal"),
+  }));
 }
 
-/** The shared wallets with this visitor's own changes applied. */
+/**
+ * The shared wallets with this visitor's own changes applied. For use on the
+ * server: anything sent to a browser should come from getWalletsFor.
+ */
 export async function getWallets(): Promise<Wallet[]> {
   return walletsFor(await getSandbox());
+}
+
+/** The wallets as this role may see them. */
+export async function getWalletsFor(role: Role): Promise<Wallet[]> {
+  return (await getWallets()).map((wallet) => walletForRole(wallet, role));
 }
 
 /** The shared transactions plus this visitor's own withdrawals, newest first. */
@@ -110,7 +125,10 @@ export async function createWithdrawal(
   const accountName = lookupAccount(request.accountNumber);
   if (!accountName) return { ok: false, error: "account_not_found" };
 
-  const { fee, total } = quoteWithdrawal(amount);
+  const { fee, total } = quoteWithdrawal(amount, wallet.withdrawalFee);
+  // Never charge a different fee from the one the admin just approved
+  if (fee !== request.expectedFee) return { ok: false, error: "fee_changed" };
+
   const withdrawal: Withdrawal = {
     id: request.idempotencyKey,
     walletId,

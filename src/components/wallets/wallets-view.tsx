@@ -32,6 +32,7 @@ import {
 import type { Wallet } from "@/lib/data/types";
 import { formatDateTime } from "@/lib/format";
 import { formatNaira, sumKobo } from "@/lib/money";
+import { isPayable } from "@/lib/wallets/withdrawals";
 import { FreezeDialog } from "./freeze-dialog";
 import { useWallets, useWalletStatus } from "./use-wallets";
 import { WithdrawDialog } from "./withdraw-dialog";
@@ -49,8 +50,10 @@ export function WalletsView({
   const statusChange = useWalletStatus();
   const [toFreeze, setToFreeze] = useState<Wallet | null>(null);
   const [toUnfreeze, setToUnfreeze] = useState<Wallet | null>(null);
-  const [toWithdraw, setToWithdraw] = useState<Wallet | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const showActions = canFreeze || canWithdraw;
+  // Found by id so an open dialog follows refreshed data, including a new fee
+  const toWithdraw = wallets.find((w) => w.id === withdrawingId);
 
   // Worked out from the query data, so they update with optimistic changes too
   const frozen = wallets.filter((w) => w.status === "frozen");
@@ -119,7 +122,7 @@ export function WalletsView({
                               ? "Frozen wallets can't send money"
                               : undefined
                           }
-                          onClick={() => setToWithdraw(wallet)}
+                          onClick={() => setWithdrawingId(wallet.id)}
                         >
                           <ArrowUpRight />
                           Withdraw
@@ -154,12 +157,12 @@ export function WalletsView({
         </Table>
       </div>
 
-      {toWithdraw && (
+      {toWithdraw && isPayable(toWithdraw) && (
         <WithdrawDialog
           // Remounting per wallet gives each attempt a clean form and a new key
           key={toWithdraw.id}
           wallet={toWithdraw}
-          onClose={() => setToWithdraw(null)}
+          onClose={() => setWithdrawingId(null)}
         />
       )}
 
