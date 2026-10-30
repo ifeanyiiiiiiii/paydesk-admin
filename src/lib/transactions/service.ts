@@ -1,7 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { getUserWithPermission } from "@/lib/auth/dal";
-import { getAllTransactions } from "@/lib/data/store";
+import { getVisitorTransactions } from "@/lib/wallets/service";
 import type { Transaction } from "@/lib/data/types";
 import {
   filterTransactions,
@@ -21,14 +21,14 @@ export async function listTransactions(
   if (!(await getUserWithPermission("transactions:view"))) {
     redirect("/overview");
   }
-  return queryTransactions(getAllTransactions(), query);
+  return queryTransactions(await getVisitorTransactions(), query);
 }
 
 export async function getTransaction(id: string): Promise<Transaction | null> {
   if (!(await getUserWithPermission("transactions:view"))) {
     redirect("/overview");
   }
-  return getAllTransactions().find((txn) => txn.id === id) ?? null;
+  return (await getVisitorTransactions()).find((txn) => txn.id === id) ?? null;
 }
 
 /** Every transaction matching the filters, for CSV export. Null if not allowed. */
@@ -36,7 +36,7 @@ export async function exportTransactions(
   query: TransactionQuery,
 ): Promise<Transaction[] | null> {
   if (!(await getUserWithPermission("transactions:export"))) return null;
-  return filterTransactions(getAllTransactions(), query);
+  return filterTransactions(await getVisitorTransactions(), query);
 }
 
 export async function canExportTransactions(): Promise<boolean> {

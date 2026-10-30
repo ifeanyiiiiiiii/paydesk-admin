@@ -7,6 +7,11 @@ import {
   type WalletStatusChange,
   withWalletStatus,
 } from "@/lib/wallets/wallets";
+import {
+  isAccountNumber,
+  type Withdrawal,
+  type WithdrawalRequest,
+} from "@/lib/wallets/withdrawals";
 
 const walletsKey = ["wallets"] as const;
 
@@ -17,6 +22,10 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
+  }).catch(() => {
+    throw new ApiError(
+      "We couldn't reach the server. Check your connection and try again.",
+    );
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
@@ -84,6 +93,49 @@ export function useWalletStatus() {
         change.action === "freeze"
           ? `${wallet.businessName}'s wallet is frozen`
           : `${wallet.businessName}'s wallet is active again`,
+      );
+    },
+
+    onSettled: () => queryClient.invalidateQueries({ queryKey: walletsKey }),
+  });
+}
+
+/**
+ * Looks up the account holder once the bank and all 10 digits are in. Results
+ * are cached by bank and account, so going back and forth doesn't re-fetch.
+ */
+export function useAccountLookup(bankCode: string, accountNumber: string) {
+  return useQuery({
+    queryKey: ["account-lookup", bankCode, accountNumber],
+    queryFn: () =>
+      request<{ accountName: string }>(
+        `/api/banks/lookup?bank=${bankCode}&account=${accountNumber}`,
+      ),
+    enabled: Boolean(bankCode) && isAccountNumber(accountNumber),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Sends a withdrawal. Unlike freezing this is deliberately not optimistic:
+ * a balance shouldn't look lower, or the money look sent, until the server
+ * has confirmed it. The same idempotency key is reused on a retry, so a
+ * lost response can't lead to paying twice.
+ */
+export function useWithdraw(walletId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: WithdrawalRequest) =>
+      request<{ wallet: Wallet; withdrawal: Withdrawal }>(
+        `/api/wallets/${walletId}/withdrawals`,
+        { method: "POST", body: JSON.stringify(body) },
+      ),
+
+    onSuccess: ({ wallet }) => {
+      queryClient.setQueryData<Wallet[]>(walletsKey, (wallets = []) =>
+        wallets.map((w) => (w.id === wallet.id ? wallet : w)),
       );
     },
 
