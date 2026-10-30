@@ -1,6 +1,7 @@
-import { calculateFee, type FeeRule, kobo } from "@/lib/money";
+import { defaultFeeRules } from "@/lib/fees/fees";
+import { calculateFee, kobo } from "@/lib/money";
 import { createRandom } from "./random";
-import type { Business, Transaction, TransactionChannel } from "./types";
+import type { Business, Transaction } from "./types";
 
 /**
  * Generates PayDesk's demo data. Every name is fictional. A fixed seed and a
@@ -58,13 +59,6 @@ export const lastNames = [
   "Okonkwo", "Bello", "Adeyemi", "Eze", "Abubakar", "Ogunleye", "Nwosu",
   "Lawal", "Okafor", "Danjuma", "Afolabi", "Chukwu", "Ibekwe", "Suleiman",
 ];
-
-/** Platform fees by channel, in the shape calculateFee expects. */
-const feeRules: Record<TransactionChannel, FeeRule> = {
-  card: { percentBps: 150, flat: kobo(10_000), cap: kobo(200_000) }, // 1.5% + ₦100, max ₦2,000
-  bank_transfer: { percentBps: 100, flat: kobo(0), cap: kobo(150_000) }, // 1%, max ₦1,500
-  ussd: { percentBps: 200, flat: kobo(0), cap: kobo(100_000) }, // 2%, max ₦1,000
-};
 
 const REFERENCE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O or 1/I
 
@@ -133,7 +127,7 @@ export function generateTransactions(
       status,
       amount,
       // Failed payments aren't charged a fee
-      fee: status === "failed" ? kobo(0) : calculateFee(amount, feeRules[channel]),
+      fee: status === "failed" ? kobo(0) : calculateFee(amount, defaultFeeRules[channel]),
       createdAt,
     };
   });
