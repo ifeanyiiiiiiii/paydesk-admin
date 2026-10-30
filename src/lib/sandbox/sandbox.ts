@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { sessionPassword } from "@/lib/auth/session";
 import type { WalletOverride } from "@/lib/wallets/wallets";
+import type { Withdrawal } from "@/lib/wallets/withdrawals";
+import { sealToFit } from "./fit";
 
 /**
  * Each visitor's changes to the demo (frozen wallets, withdrawals, ...) live
@@ -18,9 +20,13 @@ const SANDBOX_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export interface Sandbox {
   wallets: Record<string, WalletOverride>;
+  /** Recent withdrawals, newest first. */
+  withdrawals: Withdrawal[];
+  /** Total kobo withdrawn per wallet, kept apart from the capped history above. */
+  debits: Record<string, number>;
 }
 
-const empty = (): Sandbox => ({ wallets: {} });
+const empty = (): Sandbox => ({ wallets: {}, withdrawals: [], debits: {} });
 
 export async function getSandbox(): Promise<Sandbox> {
   const sealed = (await cookies()).get(SANDBOX_COOKIE)?.value;
@@ -37,12 +43,14 @@ export async function getSandbox(): Promise<Sandbox> {
   }
 }
 
-/** Only callable from a Server Action or Route Handler, where cookies can be set. */
+/**
+ * Only callable from a Server Action or Route Handler, where cookies can be
+ * set. Throws SandboxFullError if the data can't fit in a cookie.
+ */
 export async function saveSandbox(sandbox: Sandbox): Promise<void> {
-  const sealed = await sealData(sandbox, {
-    password: sessionPassword(),
-    ttl: SANDBOX_TTL_SECONDS,
-  });
+  const sealed = await sealToFit(sandbox, (data) =>
+    sealData(data, { password: sessionPassword(), ttl: SANDBOX_TTL_SECONDS }),
+  );
   (await cookies()).set(SANDBOX_COOKIE, sealed, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

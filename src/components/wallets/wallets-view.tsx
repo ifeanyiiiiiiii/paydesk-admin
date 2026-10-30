@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowUpRight,
   Lock,
   LockOpen,
   ShieldAlert,
@@ -33,18 +34,23 @@ import { formatDateTime } from "@/lib/format";
 import { formatNaira, sumKobo } from "@/lib/money";
 import { FreezeDialog } from "./freeze-dialog";
 import { useWallets, useWalletStatus } from "./use-wallets";
+import { WithdrawDialog } from "./withdraw-dialog";
 
 export function WalletsView({
   initialWallets,
   canFreeze,
+  canWithdraw,
 }: {
   initialWallets: Wallet[];
   canFreeze: boolean;
+  canWithdraw: boolean;
 }) {
   const { data: wallets } = useWallets(initialWallets);
   const statusChange = useWalletStatus();
   const [toFreeze, setToFreeze] = useState<Wallet | null>(null);
   const [toUnfreeze, setToUnfreeze] = useState<Wallet | null>(null);
+  const [toWithdraw, setToWithdraw] = useState<Wallet | null>(null);
+  const showActions = canFreeze || canWithdraw;
 
   // Worked out from the query data, so they update with optimistic changes too
   const frozen = wallets.filter((w) => w.status === "frozen");
@@ -73,14 +79,15 @@ export function WalletsView({
       </div>
 
       <div className="overflow-x-auto rounded-xl border">
-        <Table>
+        {/* Fixed widths keep the columns evenly spread, whatever the content */}
+        <Table className="min-w-[700px] table-fixed">
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead>Business</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead>Status</TableHead>
-              {canFreeze && (
-                <TableHead className="text-right">Action</TableHead>
+              <TableHead className="w-[26%]">Business</TableHead>
+              <TableHead className="w-[19%] text-center">Balance</TableHead>
+              <TableHead className="w-[23%] text-center">Status</TableHead>
+              {showActions && (
+                <TableHead className="w-[32%] text-right">Action</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -93,33 +100,52 @@ export function WalletsView({
                     {wallet.id}
                   </span>
                 </TableCell>
-                <TableCell className="text-right font-medium whitespace-nowrap tabular-nums">
+                <TableCell className="text-center font-medium whitespace-nowrap tabular-nums">
                   {formatNaira(wallet.balance)}
                 </TableCell>
-                <TableCell className="min-w-56">
+                <TableCell className="text-center whitespace-normal">
                   <WalletStatusCell wallet={wallet} />
                 </TableCell>
-                {canFreeze && (
-                  <TableCell className="text-right">
-                    {wallet.status === "active" ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setToFreeze(wallet)}
-                      >
-                        <Lock />
-                        Freeze
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setToUnfreeze(wallet)}
-                      >
-                        <LockOpen />
-                        Unfreeze
-                      </Button>
-                    )}
+                {showActions && (
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      {canWithdraw && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={wallet.status === "frozen"}
+                          title={
+                            wallet.status === "frozen"
+                              ? "Frozen wallets can't send money"
+                              : undefined
+                          }
+                          onClick={() => setToWithdraw(wallet)}
+                        >
+                          <ArrowUpRight />
+                          Withdraw
+                        </Button>
+                      )}
+                      {canFreeze &&
+                        (wallet.status === "active" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setToFreeze(wallet)}
+                          >
+                            <Lock />
+                            Freeze
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setToUnfreeze(wallet)}
+                          >
+                            <LockOpen />
+                            Unfreeze
+                          </Button>
+                        ))}
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -127,6 +153,15 @@ export function WalletsView({
           </TableBody>
         </Table>
       </div>
+
+      {toWithdraw && (
+        <WithdrawDialog
+          // Remounting per wallet gives each attempt a clean form and a new key
+          key={toWithdraw.id}
+          wallet={toWithdraw}
+          onClose={() => setToWithdraw(null)}
+        />
+      )}
 
       <FreezeDialog
         wallet={toFreeze}

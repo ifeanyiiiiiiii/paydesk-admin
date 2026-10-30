@@ -48,13 +48,13 @@ const businessProfiles: Record<string, { category: string; city: string }> = {
 // Object keys keep insertion order, so ids stay stable (biz_001 = Kola Kitchen)
 const businessNames = Object.keys(businessProfiles);
 
-const firstNames = [
+export const firstNames = [
   "Chinedu", "Aisha", "Tobi", "Ngozi", "Emeka", "Funke", "Ibrahim", "Kemi",
   "Uche", "Zainab", "Seun", "Amaka", "Yusuf", "Bisi", "Obinna", "Hauwa",
   "Tunde", "Ifeoma", "Musa", "Adaeze",
 ];
 
-const lastNames = [
+export const lastNames = [
   "Okonkwo", "Bello", "Adeyemi", "Eze", "Abubakar", "Ogunleye", "Nwosu",
   "Lawal", "Okafor", "Danjuma", "Afolabi", "Chukwu", "Ibekwe", "Suleiman",
 ];

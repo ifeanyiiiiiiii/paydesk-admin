@@ -72,6 +72,17 @@ Freezing or unfreezing a wallet updates the list instantly. If the server refuse
 
 PayDesk is a public demo, so one visitor freezing a wallet shouldn't change it for everyone. Each visitor's changes are stored in their own encrypted, httpOnly cookie and layered on top of the shared demo data. Changes survive a reload, nobody can affect anyone else, and it works on serverless hosting where server memory isn't shared between requests. See [`src/lib/sandbox/sandbox.ts`](src/lib/sandbox/sandbox.ts).
 
+### Withdrawals can't pay twice
+
+Moving money is treated differently from freezing a wallet:
+
+- **Not optimistic:** the balance only changes once the server confirms, because money shouldn't look sent before it is.
+- **Idempotency key:** each attempt carries a unique key. If the response gets lost and the user retries, the server recognises the key and returns the original result instead of paying again.
+- **The server decides:** the balance, freeze status, fee and account holder's name are all worked out on the server. The client only says what it wants, so a tampered request can't change the fee or overdraw a wallet.
+- **Review first:** a live fee quote while typing, an account name lookup, then a confirmation step, because withdrawals can't be undone.
+
+See [`src/lib/wallets/service.ts`](src/lib/wallets/service.ts) and [`src/lib/wallets/withdrawals.ts`](src/lib/wallets/withdrawals.ts).
+
 ### APIs answer with status codes
 
 Routes under `/api` never redirect to the login page. They return JSON with 401 (not signed in), 403 (not allowed), 400 (invalid input), 404 or 409 (a change that doesn't make sense, like freezing a frozen wallet), so the client can react properly.
@@ -85,7 +96,7 @@ Routes under `/api` never redirect to the login page. They return JSON with 401 
 - [x] Transactions: details drawer with fee breakdown and timeline, CSV export
 - [x] Overview analytics with charts that drill down into filtered transactions
 - [x] Businesses directory and wallets with optimistic freeze/unfreeze
-- [ ] Withdrawals with live fee quotes
+- [x] Withdrawals with live fee quotes, account lookup and idempotency
 - [ ] Fee management, admin users and role-based permissions, audit log
 - [ ] End-to-end tests, accessibility pass, screenshots
 

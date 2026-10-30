@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { authorizeApi } from "@/lib/auth/api";
+import { SandboxFullError } from "@/lib/sandbox/fit";
 import { setWalletStatus } from "@/lib/wallets/service";
 import { walletStatusChangeSchema } from "@/lib/wallets/wallets";
 
@@ -31,10 +32,17 @@ export async function POST(
   }
 
   const { id } = await ctx.params;
-  const result = await setWalletStatus(id, body.data, auth.user.name);
-  if (!result.ok) {
-    const { status, error } = messages[result.error];
-    return Response.json({ error }, { status });
+  try {
+    const result = await setWalletStatus(id, body.data, auth.user.name);
+    if (!result.ok) {
+      const { status, error } = messages[result.error];
+      return Response.json({ error }, { status });
+    }
+    return Response.json(result.wallet);
+  } catch (error) {
+    if (error instanceof SandboxFullError) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
+    throw error;
   }
-  return Response.json(result.wallet);
 }

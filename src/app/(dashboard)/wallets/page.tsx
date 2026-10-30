@@ -38,6 +38,7 @@ async function WalletsContent() {
     <WalletsView
       initialWallets={wallets}
       canFreeze={can(user.role, "wallets:freeze")}
+      canWithdraw={can(user.role, "wallets:withdraw")}
     />
   );
 }
