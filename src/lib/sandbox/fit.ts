@@ -3,7 +3,9 @@ export const MAX_COOKIE_LENGTH = 3_800;
 
 export class SandboxFullError extends Error {
   constructor() {
-    super("Your demo storage is full. Unfreeze a wallet and try again.");
+    super(
+      "Your demo storage is full. Undo an earlier change, like a frozen wallet or a custom rate, and try again.",
+    );
   }
 }
 

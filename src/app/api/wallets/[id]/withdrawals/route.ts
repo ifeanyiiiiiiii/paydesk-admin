@@ -14,6 +14,7 @@ const statusFor = {
   below_minimum: 422,
   above_maximum: 422,
   insufficient_funds: 422,
+  fee_changed: 409,
 } as const;
 
 const messages = {
@@ -24,7 +25,7 @@ const messages = {
 
 /**
  * POST /api/wallets/:id/withdrawals
- * Body: { amount (kobo), bankCode, accountNumber, idempotencyKey }
+ * Body: { amount (kobo), bankCode, accountNumber, expectedFee (kobo), idempotencyKey }
  */
 export async function POST(
   request: NextRequest,

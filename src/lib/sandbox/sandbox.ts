@@ -3,6 +3,7 @@ import { sealData, unsealData } from "iron-session";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { sessionPassword } from "@/lib/auth/session";
+import { emptyFeeOverrides, type FeeOverrides } from "@/lib/fees/fees";
 import type { WalletOverride } from "@/lib/wallets/wallets";
 import type { Withdrawal } from "@/lib/wallets/withdrawals";
 import { sealToFit } from "./fit";
@@ -24,9 +25,15 @@ export interface Sandbox {
   withdrawals: Withdrawal[];
   /** Total kobo withdrawn per wallet, kept apart from the capped history above. */
   debits: Record<string, number>;
+  fees: FeeOverrides;
 }
 
-const empty = (): Sandbox => ({ wallets: {}, withdrawals: [], debits: {} });
+const empty = (): Sandbox => ({
+  wallets: {},
+  withdrawals: [],
+  debits: {},
+  fees: emptyFeeOverrides(),
+});
 
 export async function getSandbox(): Promise<Sandbox> {
   const sealed = (await cookies()).get(SANDBOX_COOKIE)?.value;

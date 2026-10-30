@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { request } from "@/lib/api-client";
 import type { Wallet } from "@/lib/data/types";
 import {
   type WalletStatusChange,
@@ -13,28 +14,7 @@ import {
   type WithdrawalRequest,
 } from "@/lib/wallets/withdrawals";
 
-const walletsKey = ["wallets"] as const;
-
-/** An error with the server's message, so the UI can show it as-is. */
-class ApiError extends Error {}
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  }).catch(() => {
-    throw new ApiError(
-      "We couldn't reach the server. Check your connection and try again.",
-    );
-  });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new ApiError(
-      body?.error ?? "Something went wrong. Please try again.",
-    );
-  }
-  return body as T;
-}
+export const walletsKey = ["wallets"] as const;
 
 /**
  * The wallets list. Starts from the server-rendered data, so there's no

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { defaultFeeRules } from "@/lib/fees/fees";
 import { kobo } from "@/lib/money";
 import { lookupAccount } from "./bank-lookup";
 import {
@@ -13,12 +14,17 @@ import {
   withdrawalToTransaction,
 } from "./withdrawals";
 
-const active = { balance: kobo(100_000_000), status: "active" as const }; // ₦1,000,000
+const withdrawalFee = defaultFeeRules.withdrawal; // 0.5% + ₦25, max ₦1,000
+const active = {
+  balance: kobo(100_000_000), // ₦1,000,000
+  status: "active" as const,
+  withdrawalFee,
+};
 
 describe("quoteWithdrawal", () => {
   it("charges 0.5% + ₦25", () => {
     // ₦10,000 → ₦50 + ₦25
-    expect(quoteWithdrawal(kobo(1_000_000))).toEqual({
+    expect(quoteWithdrawal(kobo(1_000_000), withdrawalFee)).toEqual({
       amount: 1_000_000,
       fee: 7_500,
       total: 1_007_500,
@@ -26,7 +32,13 @@ describe("quoteWithdrawal", () => {
   });
 
   it("caps the fee at ₦1,000", () => {
-    expect(quoteWithdrawal(kobo(500_000_000)).fee).toBe(100_000);
+    expect(quoteWithdrawal(kobo(500_000_000), withdrawalFee).fee).toBe(100_000);
+  });
+
+  it("uses whichever rule it's given", () => {
+    expect(
+      quoteWithdrawal(kobo(1_000_000), { percentBps: 0, flat: kobo(0) }).fee,
+    ).toBe(0);
   });
 });
 
@@ -57,6 +69,23 @@ describe("checkWithdrawal", () => {
         kobo(1_000_000),
       ),
     ).toBe("insufficient_funds");
+  });
+
+  it("uses the wallet's own fee, so a custom rate changes what's affordable", () => {
+    const balance = kobo(1_000_000); // exactly ₦10,000
+    expect(checkWithdrawal({ ...active, balance }, kobo(1_000_000))).toBe(
+      "insufficient_funds",
+    );
+    expect(
+      checkWithdrawal(
+        {
+          ...active,
+          balance,
+          withdrawalFee: { percentBps: 0, flat: kobo(0) },
+        },
+        kobo(1_000_000),
+      ),
+    ).toBeNull();
   });
 });
 
@@ -97,6 +126,7 @@ describe("withdrawalRequestSchema", () => {
     amount: 2_500_000,
     bankCode: "101",
     accountNumber: "0123456789",
+    expectedFee: 15_000,
     idempotencyKey: "3f2b8c1e-7a4d-4e9b-9c11-0a1b2c3d4e5f",
   };
 
@@ -108,6 +138,8 @@ describe("withdrawalRequestSchema", () => {
     [{ amount: 10.5 }],
     [{ amount: -5 }],
     [{ bankCode: "999" }],
+    [{ expectedFee: -1 }],
+    [{ expectedFee: undefined }],
     [{ idempotencyKey: "not-a-uuid" }],
   ])("rejects %j", (change) => {
     expect(

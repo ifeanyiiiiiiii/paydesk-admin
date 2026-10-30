@@ -83,6 +83,18 @@ Moving money is treated differently from freezing a wallet:
 
 See [`src/lib/wallets/service.ts`](src/lib/wallets/service.ts) and [`src/lib/wallets/withdrawals.ts`](src/lib/wallets/withdrawals.ts).
 
+### Fee rules change what gets charged
+
+Fees are rules, not numbers stored on a page: a default per channel, plus custom rates agreed with individual businesses. The same `calculateFee` powers the form's preview and the server's charge.
+
+- **The approved fee is the fee charged:** the review screen sends the fee the admin saw. If a rule changed in the meantime, the server refuses and nothing moves, and the dialog shows the new total to approve instead of quietly charging a different amount.
+- **See the impact before saving:** the form compares the rule with today's on sample payments and on the last 30 days of real transactions. A change to a default leaves out businesses on a custom rate, because it wouldn't affect them.
+- **The past stays the past:** a transaction stores the fee it was charged, so changing a rule never rewrites history.
+- **Exact percentages:** "1.15%" is parsed from its digits into 115 basis points. In floating point, `1.15 * 100` is `114.99999999999999`.
+- **Negotiated rates are need-to-know:** viewers can't open the fees page, and fee rules are also stripped from the wallet data sent to their browser, since the page isn't the only way to read an API.
+
+See [`src/lib/fees/fees.ts`](src/lib/fees/fees.ts).
+
 ### APIs answer with status codes
 
 Routes under `/api` never redirect to the login page. They return JSON with 401 (not signed in), 403 (not allowed), 400 (invalid input), 404 or 409 (a change that doesn't make sense, like freezing a frozen wallet), so the client can react properly.
@@ -97,7 +109,8 @@ Routes under `/api` never redirect to the login page. They return JSON with 401 
 - [x] Overview analytics with charts that drill down into filtered transactions
 - [x] Businesses directory and wallets with optimistic freeze/unfreeze
 - [x] Withdrawals with live fee quotes, account lookup and idempotency
-- [ ] Fee management, admin users and role-based permissions, audit log
+- [x] Fee management: default rules, custom rates and impact estimates
+- [ ] Admin users and audit log
 - [ ] End-to-end tests, accessibility pass, screenshots
 
 ## Running locally
