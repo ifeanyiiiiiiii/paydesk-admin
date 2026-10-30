@@ -5,11 +5,11 @@ import type { FeeRule } from "@/lib/money";
 import { getSandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import {
   applyFeeOverrides,
-  type CustomFee,
   estimateFeeChange,
   type FeeChannel,
   type FeeConfig,
   type FeeEstimate,
+  type FeeList,
   resolveFeeRule,
   withCustomFee,
   withoutCustomFee,
@@ -17,10 +17,6 @@ import {
 
 const ESTIMATE_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
-
-export interface FeeList extends FeeConfig {
-  custom: (CustomFee & { businessName: string })[];
-}
 
 function toFeeList(config: FeeConfig): FeeList {
   const names = new Map(getBusinesses().map((b) => [b.id, b.name]));

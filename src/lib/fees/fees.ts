@@ -62,6 +62,11 @@ export interface FeeConfig {
   custom: CustomFee[];
 }
 
+/** The config with business names, as the fees page shows it. */
+export interface FeeList extends FeeConfig {
+  custom: (CustomFee & { businessName: string })[];
+}
+
 /** Custom rates in the seed data. All dated after the last seeded transaction. */
 const seedCustomFees: CustomFee[] = [
   {
