@@ -71,3 +71,32 @@ export const roleDetails: Record<Role, { label: string; description: string }> =
 export function can(role: Role, permission: Permission): boolean {
   return rolePermissions[role].has(permission);
 }
+
+/** Every permission in a sensible reading order, with words for the UI. */
+export const permissionLabels: Record<Permission, string> = {
+  "overview:view": "View the overview",
+  "transactions:view": "View transactions",
+  "transactions:export": "Export transactions",
+  "businesses:view": "View businesses",
+  "wallets:view": "View wallets",
+  "wallets:freeze": "Freeze and unfreeze wallets",
+  "wallets:withdraw": "Make withdrawals",
+  "fees:view": "View fee rules",
+  "fees:manage": "Change fee rules",
+  "admins:view": "View admin users",
+  "admins:manage": "Invite and manage admins",
+  "audit:view": "View the audit log",
+};
+
+export const permissions = Object.keys(permissionLabels) as Permission[];
+
+/** What someone gains and loses when their role changes. */
+export function roleChange(
+  from: Role,
+  to: Role,
+): { gains: Permission[]; loses: Permission[] } {
+  return {
+    gains: permissions.filter((p) => can(to, p) && !can(from, p)),
+    loses: permissions.filter((p) => can(from, p) && !can(to, p)),
+  };
+}

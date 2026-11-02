@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { can, type Permission, roles } from "./permissions";
+import {
+  can,
+  type Permission,
+  permissions,
+  roleChange,
+  roles,
+} from "./permissions";
 
 describe("can", () => {
   it("lets every role view the core operations pages", () => {
@@ -43,5 +49,33 @@ describe("can", () => {
     for (const permission of all) {
       expect(can("super_admin", permission)).toBe(true);
     }
+  });
+});
+
+describe("roleChange", () => {
+  it("lists what a demotion takes away", () => {
+    expect(roleChange("operations", "viewer")).toEqual({
+      gains: [],
+      loses: [
+        "transactions:export",
+        "wallets:freeze",
+        "wallets:withdraw",
+        "fees:view",
+        "audit:view",
+      ],
+    });
+  });
+
+  it("lists what a promotion adds", () => {
+    expect(roleChange("operations", "super_admin")).toEqual({
+      gains: ["fees:manage", "admins:view", "admins:manage"],
+      loses: [],
+    });
+  });
+
+  it("covers every permission in the labels", () => {
+    expect(roleChange("viewer", "super_admin").gains).toHaveLength(
+      permissions.length - 4,
+    );
   });
 });

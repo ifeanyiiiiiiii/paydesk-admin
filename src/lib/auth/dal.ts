@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { getAdmins } from "@/lib/admins/service";
 import { findDemoUser, type User } from "./demo-users";
 import { can, type Permission } from "./permissions";
 import { getSession } from "./session";
@@ -16,7 +17,14 @@ import { getSession } from "./session";
 /** The signed-in user, or null. For pages that work either way, like /login. */
 export const getOptionalUser = cache(async (): Promise<User | null> => {
   const { userId } = await getSession();
-  return (userId && findDemoUser(userId)) || null;
+  const user = userId ? findDemoUser(userId) : undefined;
+  if (!user) return null;
+
+  // The admin list has the final say on every request: a deactivated account
+  // is signed out straight away, and a role change applies immediately
+  const admin = (await getAdmins()).find((a) => a.id === user.id);
+  if (admin?.status !== "active") return null;
+  return { ...user, role: admin.role };
 });
 
 /** The signed-in user. Redirects to /login if there's no valid session. */
