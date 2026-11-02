@@ -2,6 +2,7 @@ import "server-only";
 import { sealData, unsealData } from "iron-session";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
+import { type AdminOverrides, emptyAdminOverrides } from "@/lib/admins/admins";
 import { sessionPassword } from "@/lib/auth/session";
 import { emptyFeeOverrides, type FeeOverrides } from "@/lib/fees/fees";
 import type { WalletOverride } from "@/lib/wallets/wallets";
@@ -26,6 +27,7 @@ export interface Sandbox {
   /** Total kobo withdrawn per wallet, kept apart from the capped history above. */
   debits: Record<string, number>;
   fees: FeeOverrides;
+  admins: AdminOverrides;
 }
 
 const empty = (): Sandbox => ({
@@ -33,6 +35,7 @@ const empty = (): Sandbox => ({
   withdrawals: [],
   debits: {},
   fees: emptyFeeOverrides(),
+  admins: emptyAdminOverrides(),
 });
 
 export async function getSandbox(): Promise<Sandbox> {

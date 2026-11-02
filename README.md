@@ -95,6 +95,16 @@ Fees are rules, not numbers stored on a page: a default per channel, plus custom
 
 See [`src/lib/fees/fees.ts`](src/lib/fees/fees.ts).
 
+### Access changes apply on the next click
+
+Super admins can invite admins, change roles and deactivate accounts. The admin list is checked on every request, not just at sign-in, so a demoted admin loses access on their next click and a deactivated one is signed out straight away.
+
+- **No lockouts:** nobody can change their own role or access, and the last active super admin can't be demoted or deactivated. The server enforces this; the page only hides what would be refused.
+- **See the consequences first:** changing a role lists exactly what the person gains and loses, worked out from the same permission map the server checks. The roles table on the page comes from that map too, so it can't go stale.
+- **Company accounts only:** invites need a `@paydesk.example` address, and look-alikes such as `@paydesk.example.evil.com` are rejected.
+
+Try it: as Adaeze, change Tunde to Viewer, then sign in as Tunde. See [`src/lib/admins/admins.ts`](src/lib/admins/admins.ts) and [`src/lib/auth/dal.ts`](src/lib/auth/dal.ts).
+
 ### APIs answer with status codes
 
 Routes under `/api` never redirect to the login page. They return JSON with 401 (not signed in), 403 (not allowed), 400 (invalid input), 404 or 409 (a change that doesn't make sense, like freezing a frozen wallet), so the client can react properly.
@@ -110,7 +120,8 @@ Routes under `/api` never redirect to the login page. They return JSON with 401 
 - [x] Businesses directory and wallets with optimistic freeze/unfreeze
 - [x] Withdrawals with live fee quotes, account lookup and idempotency
 - [x] Fee management: default rules, custom rates and impact estimates
-- [ ] Admin users and audit log
+- [x] Admin users: invites, role changes and deactivation, with lockout protection
+- [ ] Audit log
 - [ ] End-to-end tests, accessibility pass, screenshots
 
 ## Running locally

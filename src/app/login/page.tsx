@@ -9,7 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getAdmins } from "@/lib/admins/service";
 import { getOptionalUser } from "@/lib/auth/dal";
+import { demoUsers } from "@/lib/auth/demo-users";
 import { DemoAccountList } from "./demo-account-list";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -49,5 +51,15 @@ export default function LoginPage() {
 async function AccountsOrRedirect() {
   // Already signed in with a valid session: skip the login page
   if (await getOptionalUser()) redirect("/overview");
-  return <DemoAccountList />;
+
+  // Shown as this visitor left them, so a role change or deactivation is visible here
+  const admins = await getAdmins();
+  const accounts = demoUsers.map((user) => {
+    const admin = admins.find((a) => a.id === user.id);
+    return {
+      user: { ...user, role: admin?.role ?? user.role },
+      active: admin?.status === "active",
+    };
+  });
+  return <DemoAccountList accounts={accounts} />;
 }
