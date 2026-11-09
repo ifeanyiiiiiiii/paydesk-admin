@@ -1,22 +1,31 @@
 import "server-only";
 import { DATA_END } from "@/lib/data/seed";
 import { getAllTransactions, getBusinesses } from "@/lib/data/store";
+import { appendAudit } from "@/lib/audit/audit";
+import type { User } from "@/lib/auth/demo-users";
 import type { FeeRule } from "@/lib/money";
 import { getSandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import {
   applyFeeOverrides,
+  describeFeeRule,
   estimateFeeChange,
+  feeChannelLabels,
   type FeeChannel,
   type FeeConfig,
   type FeeEstimate,
   type FeeList,
   resolveFeeRule,
+  sameFeeRule,
   withCustomFee,
   withoutCustomFee,
 } from "./fees";
 
 const ESTIMATE_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
+
+function businessName(id: string): string | undefined {
+  return getBusinesses().find((b) => b.id === id)?.name;
+}
 
 function toFeeList(config: FeeConfig): FeeList {
   const names = new Map(getBusinesses().map((b) => [b.id, b.name]));
@@ -38,14 +47,23 @@ export async function getFees(): Promise<FeeList> {
 export async function setDefaultFee(
   channel: FeeChannel,
   rule: FeeRule,
-  actor: string,
+  actor: User,
 ): Promise<FeeList> {
   const sandbox = await getSandbox();
+  const before = applyFeeOverrides(sandbox.fees).defaults[channel].rule;
+  // Saving the same rule again changes nothing, so there is nothing to record
+  if (sameFeeRule(before, rule)) return toFeeList(applyFeeOverrides(sandbox.fees));
+
   sandbox.fees.defaults[channel] = {
     rule,
-    by: actor,
+    by: actor.name,
     at: new Date().toISOString(),
   };
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "fee.default.update",
+    target: feeChannelLabels[channel],
+    detail: `${describeFeeRule(before)} → ${describeFeeRule(rule)}`,
+  });
   await saveSandbox(sandbox);
   return toFeeList(applyFeeOverrides(sandbox.fees));
 }
@@ -62,19 +80,29 @@ export async function setCustomFee(
   businessId: string,
   channel: FeeChannel,
   rule: FeeRule,
-  actor: string,
+  actor: User,
 ): Promise<CustomFeeResult> {
-  if (!getBusinesses().some((b) => b.id === businessId)) {
-    return { ok: false, error: "business_not_found" };
-  }
+  const name = businessName(businessId);
+  if (!name) return { ok: false, error: "business_not_found" };
+
   const sandbox = await getSandbox();
+  const before = resolveFeeRule(
+    applyFeeOverrides(sandbox.fees),
+    businessId,
+    channel,
+  );
   const fees = withCustomFee(sandbox.fees, businessId, channel, {
     rule,
-    by: actor,
+    by: actor.name,
     at: new Date().toISOString(),
   });
   if (!fees) return { ok: false, error: "too_many" };
   sandbox.fees = fees;
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "fee.custom.set",
+    target: `${name} · ${feeChannelLabels[channel]}`,
+    detail: `${describeFeeRule(before)} → ${describeFeeRule(rule)}`,
+  });
   await saveSandbox(sandbox);
   return { ok: true, fees: toFeeList(applyFeeOverrides(fees)) };
 }
@@ -83,11 +111,22 @@ export async function setCustomFee(
 export async function removeCustomFee(
   businessId: string,
   channel: FeeChannel,
+  actor: User,
 ): Promise<CustomFeeResult> {
   const sandbox = await getSandbox();
+  const before = resolveFeeRule(
+    applyFeeOverrides(sandbox.fees),
+    businessId,
+    channel,
+  );
   const fees = withoutCustomFee(sandbox.fees, businessId, channel);
   if (!fees) return { ok: false, error: "not_found" };
   sandbox.fees = fees;
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "fee.custom.remove",
+    target: `${businessName(businessId) ?? businessId} · ${feeChannelLabels[channel]}`,
+    detail: `${describeFeeRule(before)} → default ${describeFeeRule(applyFeeOverrides(fees).defaults[channel].rule)}`,
+  });
   await saveSandbox(sandbox);
   return { ok: true, fees: toFeeList(applyFeeOverrides(fees)) };
 }

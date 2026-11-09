@@ -30,7 +30,7 @@ export async function PUT(
 
   try {
     return Response.json(
-      await setDefaultFee(channel.data, rule.data, auth.user.name),
+      await setDefaultFee(channel.data, rule.data, auth.user),
     );
   } catch (error) {
     if (error instanceof SandboxFullError) {

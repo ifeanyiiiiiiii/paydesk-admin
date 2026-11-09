@@ -65,7 +65,7 @@ export async function PUT(
   }
 
   return respond(() =>
-    setCustomFee(businessId, channel.data, rule.data, auth.user.name),
+    setCustomFee(businessId, channel.data, rule.data, auth.user),
   );
 }
 
@@ -83,5 +83,5 @@ export async function DELETE(
     return Response.json({ error: "Unknown fee channel" }, { status: 404 });
   }
 
-  return respond(() => removeCustomFee(businessId, channel.data));
+  return respond(() => removeCustomFee(businessId, channel.data, auth.user));
 }

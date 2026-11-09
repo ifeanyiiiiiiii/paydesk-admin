@@ -1,9 +1,11 @@
 import "server-only";
 import { getAllTransactions, getSeedWallets } from "@/lib/data/store";
 import type { PayableWallet, Transaction, Wallet } from "@/lib/data/types";
+import { appendAudit } from "@/lib/audit/audit";
+import type { User } from "@/lib/auth/demo-users";
 import type { Role } from "@/lib/auth/permissions";
 import { applyFeeOverrides, resolveFeeRule } from "@/lib/fees/fees";
-import { kobo } from "@/lib/money";
+import { formatNaira, kobo } from "@/lib/money";
 import { getSandbox, type Sandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import { lookupAccount } from "./bank-lookup";
 import {
@@ -15,6 +17,7 @@ import {
 } from "./wallets";
 import {
   applyWalletDebits,
+  bankName,
   checkWithdrawal,
   quoteWithdrawal,
   type Withdrawal,
@@ -70,7 +73,7 @@ export async function getVisitorTransactions(): Promise<Transaction[]> {
 export async function setWalletStatus(
   id: string,
   change: WalletStatusChange,
-  actor: string,
+  actor: User,
 ): Promise<StatusChangeResult | { ok: false; error: "not_found" }> {
   const sandbox = await getSandbox();
   const wallet = walletsFor(sandbox).find((w) => w.id === id);
@@ -79,12 +82,17 @@ export async function setWalletStatus(
   const result = changeWalletStatus(
     wallet,
     change,
-    actor,
+    actor.name,
     new Date().toISOString(),
   );
   if (result.ok) {
     const { status, frozen } = result.wallet;
     sandbox.wallets[id] = frozen ? { status, frozen } : { status };
+    sandbox.audit = appendAudit(sandbox.audit, actor, {
+      action: change.action === "freeze" ? "wallet.freeze" : "wallet.unfreeze",
+      target: wallet.businessName,
+      detail: frozen?.reason,
+    });
     await saveSandbox(sandbox);
   }
   return result;
@@ -103,7 +111,7 @@ export type WithdrawalResult =
 export async function createWithdrawal(
   walletId: string,
   request: WithdrawalRequest,
-  actor: string,
+  actor: User,
 ): Promise<WithdrawalResult> {
   const sandbox = await getSandbox();
   const wallet = walletsFor(sandbox).find((w) => w.id === walletId);
@@ -137,7 +145,7 @@ export async function createWithdrawal(
     bankCode: request.bankCode,
     accountName,
     accountLast4: request.accountNumber.slice(-4),
-    by: actor,
+    by: actor.name,
     at: new Date().toISOString(),
   };
 
@@ -146,6 +154,11 @@ export async function createWithdrawal(
     WITHDRAWAL_HISTORY_LIMIT,
   );
   sandbox.debits[walletId] = (sandbox.debits[walletId] ?? 0) + total;
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "withdrawal.create",
+    target: wallet.businessName,
+    detail: `${formatNaira(amount)} + ${formatNaira(fee)} fee to ${accountName}, ${bankName(request.bankCode)} ••${withdrawal.accountLast4}`,
+  });
   await saveSandbox(sandbox);
 
   return {

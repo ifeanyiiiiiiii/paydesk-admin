@@ -73,5 +73,5 @@ export async function DELETE(
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;
-  return respond(() => revokeInvite(id));
+  return respond(() => revokeInvite(id, auth.user));
 }

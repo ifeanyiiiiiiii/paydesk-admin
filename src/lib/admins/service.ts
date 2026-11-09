@@ -1,5 +1,7 @@
 import "server-only";
+import { appendAudit } from "@/lib/audit/audit";
 import type { User } from "@/lib/auth/demo-users";
+import { roleDetails } from "@/lib/auth/permissions";
 import { getSandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import {
   type Admin,
@@ -46,6 +48,19 @@ export async function changeAdmin(
     by: actor.name,
     at: new Date().toISOString(),
   };
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action:
+      change.action === "change_role"
+        ? "admin.role"
+        : change.action === "deactivate"
+          ? "admin.deactivate"
+          : "admin.reactivate",
+    target: target.name,
+    detail:
+      change.action === "change_role"
+        ? `${roleDetails[target.role].label} → ${roleDetails[role].label}`
+        : undefined,
+  });
   await saveSandbox(sandbox);
   return { ok: true, admins: applyAdminOverrides(sandbox.admins) };
 }
@@ -65,12 +80,20 @@ export async function inviteAdmin(
     addedAt: new Date().toISOString(),
     by: actor.name,
   });
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "admin.invite",
+    target: invite.name,
+    detail: `${invite.email} as ${roleDetails[invite.role].label}`,
+  });
   await saveSandbox(sandbox);
   return { ok: true, admins: applyAdminOverrides(sandbox.admins) };
 }
 
 /** Cancels an invite that hasn't been accepted. Callers must check admins:manage. */
-export async function revokeInvite(id: string): Promise<AdminResult> {
+export async function revokeInvite(
+  id: string,
+  actor: User,
+): Promise<AdminResult> {
   const sandbox = await getSandbox();
   const target = applyAdminOverrides(sandbox.admins).find((a) => a.id === id);
   if (!target) return { ok: false, error: "not_found" };
@@ -83,6 +106,11 @@ export async function revokeInvite(id: string): Promise<AdminResult> {
     sandbox.admins.revoked.push(id);
   }
   delete sandbox.admins.changed[id];
+  sandbox.audit = appendAudit(sandbox.audit, actor, {
+    action: "admin.revoke",
+    target: target.name,
+    detail: target.email,
+  });
   await saveSandbox(sandbox);
   return { ok: true, admins: applyAdminOverrides(sandbox.admins) };
 }

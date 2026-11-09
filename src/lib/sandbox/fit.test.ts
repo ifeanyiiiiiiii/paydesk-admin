@@ -21,6 +21,19 @@ describe("sealToFit", () => {
     expect(sandbox.withdrawals).toHaveLength(2);
   });
 
+  it("drops withdrawal history before audit entries", async () => {
+    const sandbox = { withdrawals: ["w1", "w2"], audit: ["a1", "a2"] };
+    const kept = JSON.parse(
+      await sealToFit(sandbox, seal, JSON.stringify(sandbox).length - 5),
+    );
+    expect(kept).toEqual({ withdrawals: ["w1"], audit: ["a1", "a2"] });
+
+    // {"withdrawals":[],"audit":["a1","a2"]} is 38 characters, so 35 forces one out
+    const tight = JSON.parse(await sealToFit(sandbox, seal, 35));
+    expect(tight.withdrawals).toEqual([]);
+    expect(tight.audit).toEqual(["a1"]);
+  });
+
   it("throws rather than losing other data", async () => {
     const sandbox = { wallets: "x".repeat(50), withdrawals: [] };
     await expect(sealToFit(sandbox, seal, 20)).rejects.toThrow(
