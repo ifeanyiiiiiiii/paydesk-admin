@@ -2,10 +2,9 @@
 
 import { ChevronRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { signIn } from "@/lib/auth/actions";
 import { initials, type User } from "@/lib/auth/demo-users";
 import { roleDetails } from "@/lib/auth/permissions";
 
@@ -16,18 +15,29 @@ export interface DemoAccount {
 }
 
 export function DemoAccountList({ accounts }: { accounts: DemoAccount[] }) {
-  // Where to go after signing in, e.g. /login?from=/fees. The server action
-  // checks it's a same-site path before redirecting.
+  // Where to go after signing in, e.g. /login?from=/fees. The server checks
+  // it's a same-site path before redirecting.
   const from = useSearchParams().get("from") ?? "";
+  const [signingIn, setSigningIn] = useState<string | null>(null);
 
   return (
     <ul className="space-y-2">
       {accounts.map(({ user, active }) => (
         <li key={user.id}>
-          <form action={signIn}>
+          {/* A plain form post, so the browser loads the dashboard in full */}
+          <form
+            method="post"
+            action="/auth/sign-in"
+            onSubmit={() => setSigningIn(user.id)}
+          >
             <input type="hidden" name="userId" value={user.id} />
             <input type="hidden" name="from" value={from} />
-            <AccountButton user={user} active={active} />
+            <AccountButton
+              user={user}
+              active={active}
+              pending={signingIn === user.id}
+              disabled={signingIn !== null}
+            />
           </form>
         </li>
       ))}
@@ -35,14 +45,23 @@ export function DemoAccountList({ accounts }: { accounts: DemoAccount[] }) {
   );
 }
 
-function AccountButton({ user, active }: { user: User; active: boolean }) {
-  const { pending } = useFormStatus();
+function AccountButton({
+  user,
+  active,
+  pending,
+  disabled,
+}: {
+  user: User;
+  active: boolean;
+  pending: boolean;
+  disabled: boolean;
+}) {
   const role = roleDetails[user.role];
 
   return (
     <button
       type="submit"
-      disabled={pending || !active}
+      disabled={disabled || !active}
       className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
     >
       <Avatar className="size-10">

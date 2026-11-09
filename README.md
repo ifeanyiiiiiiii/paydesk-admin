@@ -103,7 +103,20 @@ Super admins can invite admins, change roles and deactivate accounts. The admin 
 - **See the consequences first:** changing a role lists exactly what the person gains and loses, worked out from the same permission map the server checks. The roles table on the page comes from that map too, so it can't go stale.
 - **Company accounts only:** invites need a `@paydesk.example` address, and look-alikes such as `@paydesk.example.evil.com` are rejected.
 
+Signing in and out are plain form posts that end in a full page load. A client-side navigation would leave the previous account's pages and cached data in memory, where the next person on a shared computer could find them with the browser's developer tools.
+
 Try it: as Adaeze, change Tunde to Viewer, then sign in as Tunde. See [`src/lib/admins/admins.ts`](src/lib/admins/admins.ts) and [`src/lib/auth/dal.ts`](src/lib/auth/dal.ts).
+
+### An audit log that can't be rewritten
+
+Freezes, withdrawals, fee changes, admin changes and data exports are all recorded with who did it, their role at the time, and what changed ("1.5% → 1.4%", "Operations → Viewer").
+
+- **Saved with the change:** each entry is written in the same save as the change it describes, so neither can exist without the other.
+- **Append-only:** there is no route, function or button to edit or delete an entry, for anyone.
+- **Exports count:** customer data leaving the system is logged with the row count and filters used.
+- **Compressed storage:** each visitor's demo data lives in a cookie of about 4 KB. Compressing it before encryption fits several times more history. When it does fill up, old withdrawal records are dropped first, since their effect on balances is kept separately and the log still records them.
+
+See [`src/lib/audit/audit.ts`](src/lib/audit/audit.ts).
 
 ### APIs answer with status codes
 
@@ -121,7 +134,7 @@ Routes under `/api` never redirect to the login page. They return JSON with 401 
 - [x] Withdrawals with live fee quotes, account lookup and idempotency
 - [x] Fee management: default rules, custom rates and impact estimates
 - [x] Admin users: invites, role changes and deactivation, with lockout protection
-- [ ] Audit log
+- [x] Audit log of every change and export
 - [ ] End-to-end tests, accessibility pass, screenshots
 
 ## Running locally

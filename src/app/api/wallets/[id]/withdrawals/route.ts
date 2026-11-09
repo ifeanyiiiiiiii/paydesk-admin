@@ -46,7 +46,7 @@ export async function POST(
 
   const { id } = await ctx.params;
   try {
-    const result = await createWithdrawal(id, body.data, auth.user.name);
+    const result = await createWithdrawal(id, body.data, auth.user);
     if (!result.ok) {
       return Response.json(
         { error: messages[result.error] },

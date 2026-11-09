@@ -1,6 +1,8 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { appendAudit } from "@/lib/audit/audit";
 import { getUserWithPermission } from "@/lib/auth/dal";
+import { getSandbox, saveSandbox } from "@/lib/sandbox/sandbox";
 import { getVisitorTransactions } from "@/lib/wallets/service";
 import type { Transaction } from "@/lib/data/types";
 import {
@@ -8,6 +10,7 @@ import {
   queryTransactions,
   type TransactionPage,
   type TransactionQuery,
+  toSearchParams,
 } from "./query";
 
 /*
@@ -35,8 +38,22 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
 export async function exportTransactions(
   query: TransactionQuery,
 ): Promise<Transaction[] | null> {
-  if (!(await getUserWithPermission("transactions:export"))) return null;
-  return filterTransactions(await getVisitorTransactions(), query);
+  const user = await getUserWithPermission("transactions:export");
+  if (!user) return null;
+  const rows = filterTransactions(await getVisitorTransactions(), query);
+
+  // Customer data leaving the system is exactly what an audit log is for
+  const filters = [...toSearchParams({ ...query, page: 1, pageSize: 25 })]
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+  const sandbox = await getSandbox();
+  sandbox.audit = appendAudit(sandbox.audit, user, {
+    action: "transactions.export",
+    target: "Transactions (CSV)",
+    detail: `${rows.length.toLocaleString("en-NG")} rows${filters ? `, ${filters}` : ", no filters"}`,
+  });
+  await saveSandbox(sandbox);
+  return rows;
 }
 
 export async function canExportTransactions(): Promise<boolean> {

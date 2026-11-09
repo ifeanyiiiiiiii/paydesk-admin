@@ -14,7 +14,9 @@ import { SESSION_COOKIE } from "@/lib/auth/constants";
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (pathname !== "/login" && !request.cookies.has(SESSION_COOKIE)) {
+  // Signing in and out must work without a session; those routes check for themselves
+  const isPublic = pathname === "/login" || pathname.startsWith("/auth/");
+  if (!isPublic && !request.cookies.has(SESSION_COOKIE)) {
     // APIs answer with a status code; redirecting them to an HTML login
     // page would hand the client a web page where it expects JSON
     if (pathname.startsWith("/api/")) {

@@ -36,7 +36,7 @@ export async function POST(
 
   const { id } = await ctx.params;
   try {
-    const result = await setWalletStatus(id, body.data, auth.user.name);
+    const result = await setWalletStatus(id, body.data, auth.user);
     if (!result.ok) {
       const { status, error } = messages[result.error];
       return Response.json({ error }, { status });

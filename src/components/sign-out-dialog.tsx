@@ -1,9 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { signOut } from "@/lib/auth/actions";
+import { Button } from "@/components/ui/button";
 
 /** Asks before signing out, so a stray click doesn't end the session. */
 export function SignOutDialog({
@@ -21,7 +20,7 @@ export function SignOutDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [isSigningOut, startTransition] = useTransition();
+  const [isSigningOut, setSigningOut] = useState(false);
 
   return (
     <AlertDialog
@@ -36,16 +35,23 @@ export function SignOutDialog({
             You&apos;ll need to pick an account again to get back in.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSigningOut}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isSigningOut}
-            onClick={() => startTransition(() => signOut())}
-          >
-            {isSigningOut ? "Signing out…" : "Sign out"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        {/*
+          A plain form post: the browser then loads /login in full, which
+          clears every page and cached response this session left in memory,
+          so the next person on a shared computer can't find them.
+        */}
+        <form
+          method="post"
+          action="/auth/sign-out"
+          onSubmit={() => setSigningOut(true)}
+        >
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSigningOut}>Cancel</AlertDialogCancel>
+            <Button type="submit" variant="destructive" disabled={isSigningOut}>
+              {isSigningOut ? "Signing out…" : "Sign out"}
+            </Button>
+          </AlertDialogFooter>
+        </form>
       </AlertDialogContent>
     </AlertDialog>
   );

@@ -10,21 +10,30 @@ export class SandboxFullError extends Error {
 }
 
 /**
- * Seals a sandbox so it fits in a cookie, dropping the oldest withdrawal
- * records if needed. Only history is lost: balances are kept separately, so
- * money that left a wallet stays gone. If it still doesn't fit, this throws
- * rather than letting the browser silently discard the whole cookie.
+ * Seals a sandbox so it fits in a cookie, dropping the oldest history if
+ * needed: withdrawal records first, then audit entries. Only history is lost:
+ * balances are kept separately, so money that left a wallet stays gone, and
+ * the audit log still records the withdrawal. If it still doesn't fit, this
+ * throws rather than letting the browser silently discard the whole cookie.
  */
-export async function sealToFit<T extends { withdrawals: unknown[] }>(
+export async function sealToFit<
+  T extends { withdrawals: unknown[]; audit?: unknown[] },
+>(
   sandbox: T,
   seal: (data: T) => Promise<string>,
   limit = MAX_COOKIE_LENGTH,
 ): Promise<string> {
-  const trimmed = { ...sandbox, withdrawals: [...sandbox.withdrawals] };
+  const trimmed = {
+    ...sandbox,
+    withdrawals: [...sandbox.withdrawals],
+    ...(sandbox.audit && { audit: [...sandbox.audit] }),
+  };
   for (;;) {
     const sealed = await seal(trimmed);
     if (sealed.length <= limit) return sealed;
-    if (trimmed.withdrawals.length === 0) throw new SandboxFullError();
-    trimmed.withdrawals.pop(); // newest first, so this is the oldest
+    // Both lists are newest first, so pop() removes the oldest
+    if (trimmed.withdrawals.length > 0) trimmed.withdrawals.pop();
+    else if (trimmed.audit?.length) trimmed.audit.pop();
+    else throw new SandboxFullError();
   }
 }
