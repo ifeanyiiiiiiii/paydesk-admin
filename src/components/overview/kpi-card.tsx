@@ -1,4 +1,9 @@
-import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  type LucideIcon,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Kpi } from "@/lib/analytics/overview";
 import { cn } from "@/lib/utils";
@@ -9,12 +14,14 @@ import { cn } from "@/lib/utils";
  * colour alone.
  */
 export function KpiCard({
+  icon: Icon,
   label,
   value,
   kpi,
   rangeLabel,
   changeAs = "percent",
 }: {
+  icon: LucideIcon;
   label: string;
   value: string;
   kpi: Kpi;
@@ -28,7 +35,10 @@ export function KpiCard({
   return (
     <Card size="sm">
       <CardHeader>
-        <CardTitle className="text-sm font-normal text-muted-foreground">
+        <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-indigo-500/12 text-indigo-600 dark:text-indigo-300">
+            <Icon className="size-4" aria-hidden />
+          </span>
           {label}
         </CardTitle>
       </CardHeader>

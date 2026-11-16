@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ArrowLeftRight, BadgeCheck, Banknote, Receipt } from "lucide-react";
 import { KpiCard } from "@/components/overview/kpi-card";
 import { RangeTabs } from "@/components/overview/range-tabs";
 import { StatusBreakdown } from "@/components/overview/status-breakdown";
@@ -57,18 +58,21 @@ async function OverviewContent({
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <KpiCard
+          icon={Banknote}
           label="Volume processed"
           value={formatNaira(kobo(kpis.volume.current), { compact: true })}
           kpi={kpis.volume}
           rangeLabel={rangeLabel}
         />
         <KpiCard
+          icon={ArrowLeftRight}
           label="Transactions"
           value={formatCount(kpis.transactions.current)}
           kpi={kpis.transactions}
           rangeLabel={rangeLabel}
         />
         <KpiCard
+          icon={BadgeCheck}
           label="Success rate"
           value={`${(kpis.successRate.current * 100).toFixed(1)}%`}
           kpi={kpis.successRate}
@@ -76,6 +80,7 @@ async function OverviewContent({
           changeAs="points"
         />
         <KpiCard
+          icon={Receipt}
           label="Fees earned"
           value={formatNaira(kobo(kpis.fees.current), { compact: true })}
           kpi={kpis.fees}

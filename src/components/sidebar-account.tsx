@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { avatarTone } from "@/lib/avatar";
 import { initials, type User } from "@/lib/auth/demo-users";
 import { roleDetails } from "@/lib/auth/permissions";
 
@@ -21,7 +22,9 @@ export function SidebarAccount({ user }: { user: User }) {
       <SidebarMenu>
         <SidebarMenuItem className="flex items-center gap-2 px-1 py-1.5 group-data-[collapsible=icon]:hidden">
           <Avatar className="size-8">
-            <AvatarFallback>{initials(user.name)}</AvatarFallback>
+            <AvatarFallback className={avatarTone(user.name)}>
+              {initials(user.name)}
+            </AvatarFallback>
           </Avatar>
           <div className="grid min-w-0 leading-tight">
             <span className="truncate text-sm font-medium">{user.name}</span>

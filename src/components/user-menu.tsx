@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { avatarTone } from "@/lib/avatar";
 import { initials, type User } from "@/lib/auth/demo-users";
 import { roleDetails } from "@/lib/auth/permissions";
 
@@ -35,7 +36,9 @@ export function UserMenu({ user }: { user: User }) {
           }
         >
           <Avatar className="size-8">
-            <AvatarFallback>{initials(user.name)}</AvatarFallback>
+            <AvatarFallback className={avatarTone(user.name)}>
+              {initials(user.name)}
+            </AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
