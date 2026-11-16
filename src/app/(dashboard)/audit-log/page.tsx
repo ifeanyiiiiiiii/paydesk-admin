@@ -1,3 +1,4 @@
+import { SearchX } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -53,13 +54,13 @@ export default function AuditLogPage({ searchParams }: PageProps<"/audit-log">) 
   );
 }
 
+/** Kept clear of indigo (the brand) and of green, amber and red (payment status). */
 const categoryStyles: Record<AuditCategory, string> = {
   wallets: "border-sky-600/20 bg-sky-500/10 text-sky-700 dark:text-sky-400",
   withdrawals:
-    "border-violet-600/20 bg-violet-500/10 text-violet-700 dark:text-violet-400",
-  fees: "border-amber-600/20 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  admins:
-    "border-emerald-600/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    "border-pink-600/20 bg-pink-500/10 text-pink-700 dark:text-pink-400",
+  fees: "border-orange-600/20 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+  admins: "border-teal-600/20 bg-teal-500/10 text-teal-700 dark:text-teal-400",
   exports: "border-border bg-muted text-muted-foreground",
 };
 
@@ -116,12 +117,15 @@ async function AuditResults({ searchParams }: { searchParams: SearchParams }) {
       </div>
 
       {entries.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Nothing matches these filters.{" "}
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <span className="flex size-10 items-center justify-center rounded-full bg-indigo-500/12 text-indigo-600 dark:text-indigo-300">
+            <SearchX className="size-5" aria-hidden />
+          </span>
+          <p className="font-medium text-foreground">Nothing matches these filters</p>
           <Link href="/audit-log" className="underline underline-offset-4">
             Show everything
           </Link>
-        </p>
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border">
           <Table className="min-w-[880px] table-fixed">

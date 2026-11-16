@@ -30,6 +30,7 @@ import {
   checkAdminChange,
   MAX_PENDING_INVITES,
 } from "@/lib/admins/admins";
+import { avatarTone } from "@/lib/avatar";
 import { initials } from "@/lib/auth/demo-users";
 import {
   can,
@@ -39,6 +40,7 @@ import {
   roles,
 } from "@/lib/auth/permissions";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { InviteDialog } from "./invite-dialog";
 import { RoleDialog } from "./role-dialog";
 import { useAdmins, useChangeAdmin, useRevokeInvite } from "./use-admins";
@@ -131,7 +133,9 @@ export function AdminsView({
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback
+                            className={cn("text-xs", avatarTone(admin.name))}
+                          >
                             {initials(admin.name)}
                           </AvatarFallback>
                         </Avatar>

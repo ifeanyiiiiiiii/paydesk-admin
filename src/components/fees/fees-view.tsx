@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Handshake, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -156,9 +156,13 @@ export function FeesView({
         </div>
 
         {fees.custom.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            No custom rates. Every business pays the default rules.
-          </p>
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            <span className="flex size-10 items-center justify-center rounded-full bg-indigo-500/12 text-indigo-600 dark:text-indigo-300">
+              <Handshake className="size-5" aria-hidden />
+            </span>
+            <p className="font-medium text-foreground">No custom rates yet</p>
+            <p>Every business pays the default rules.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border">
             <Table className="min-w-[860px] table-fixed">
