@@ -118,6 +118,10 @@ Freezes, withdrawals, fee changes, admin changes and data exports are all record
 
 See [`src/lib/audit/audit.ts`](src/lib/audit/audit.ts).
 
+### Colour that doesn't compete with status
+
+The brand colour is indigo because green, amber and red already mean successful, pending and failed. A green brand would make every button look like a successful payment. Indigo marks actions and navigation; people's initials and audit tags use other hues that stay clear of both. The data-viz colours are separate and were checked for colour-blind separation.
+
 ### APIs answer with status codes
 
 Routes under `/api` never redirect to the login page. They return JSON with 401 (not signed in), 403 (not allowed), 400 (invalid input), 404 or 409 (a change that doesn't make sense, like freezing a frozen wallet), so the client can react properly.

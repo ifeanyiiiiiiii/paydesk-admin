@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { avatarTone } from "@/lib/avatar";
 import { initials, type User } from "@/lib/auth/demo-users";
 import { roleDetails } from "@/lib/auth/permissions";
 
@@ -65,11 +66,14 @@ function AccountButton({
       className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
     >
       <Avatar className="size-10">
-        <AvatarFallback>{initials(user.name)}</AvatarFallback>
+        <AvatarFallback className={avatarTone(user.name)}>
+          {initials(user.name)}
+        </AvatarFallback>
       </Avatar>
       <span className="flex-1 space-y-0.5">
-        <span className="flex items-center gap-2">
-          <span className="font-medium">{user.name}</span>
+        {/* On narrow screens the badge wraps below, rather than splitting the name */}
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium whitespace-nowrap">{user.name}</span>
           <Badge variant="secondary">{role.label}</Badge>
         </span>
         <span className="block text-xs text-muted-foreground">
