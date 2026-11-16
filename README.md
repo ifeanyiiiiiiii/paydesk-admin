@@ -139,7 +139,15 @@ Routes under `/api` never redirect to the login page. They return JSON with 401 
 - [x] Fee management: default rules, custom rates and impact estimates
 - [x] Admin users: invites, role changes and deactivation, with lockout protection
 - [x] Audit log of every change and export
-- [ ] End-to-end tests, accessibility pass, screenshots
+- [x] End-to-end tests of the main journeys, run in CI on every pull request
+- [ ] Accessibility pass, screenshots
+
+## Testing
+
+- **Unit tests (Vitest):** the rules that matter, tested directly: money and fee maths, withdrawal checks, permissions, the admin lockout rules, audit entries and the cookie size limits.
+- **End-to-end tests (Playwright):** a real browser goes through the main journeys: signing in as each role, a withdrawal from quote to audit log, freezing and unfreezing, a fee change reaching the next withdrawal, demoting and deactivating admins, and a filtered CSV export. Each test starts with fresh cookies, so they can run in parallel. CI runs them against a production build.
+
+The end-to-end tests also caught a real race: freezing updates the list before the server confirms, so the Unfreeze button appeared early, and an unfreeze sent before the freeze was saved got refused. A wallet's buttons now wait while its change is being confirmed.
 
 ## Running locally
 
@@ -157,6 +165,7 @@ Open http://localhost:3000.
 |---|---|
 | `npm run dev` | Start the dev server |
 | `npm test` | Run unit tests |
+| `npm run test:e2e` | Run end-to-end tests in a real browser (uses the dev server if it is running; first run `npx playwright install chromium`) |
 | `npm run typecheck` | Type-check the project |
 | `npm run lint` | Lint the project |
 | `npm run build` | Production build |

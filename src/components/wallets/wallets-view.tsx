@@ -52,6 +52,12 @@ export function WalletsView({
   const [toUnfreeze, setToUnfreeze] = useState<Wallet | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const showActions = canFreeze || canWithdraw;
+  // The list updates before the server confirms a freeze. Until it does, that
+  // wallet's buttons wait: an unfreeze sent too soon would reach the server
+  // before the freeze it's undoing, and be refused
+  const confirmingId = statusChange.isPending
+    ? statusChange.variables?.id
+    : undefined;
   // Found by id so an open dialog follows refreshed data, including a new fee
   const toWithdraw = wallets.find((w) => w.id === withdrawingId);
 
@@ -116,7 +122,10 @@ export function WalletsView({
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={wallet.status === "frozen"}
+                          disabled={
+                            wallet.status === "frozen" ||
+                            wallet.id === confirmingId
+                          }
                           title={
                             wallet.status === "frozen"
                               ? "Frozen wallets can't send money"
@@ -133,6 +142,7 @@ export function WalletsView({
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={wallet.id === confirmingId}
                             onClick={() => setToFreeze(wallet)}
                           >
                             <Lock />
@@ -142,6 +152,7 @@ export function WalletsView({
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={wallet.id === confirmingId}
                             onClick={() => setToUnfreeze(wallet)}
                           >
                             <LockOpen />
